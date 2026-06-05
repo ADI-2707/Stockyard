@@ -1,0 +1,116 @@
+/* Alert Center page structures */
+.alertPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  height: 100%;
+}
+
+/* Tab selector for Alerts vs History (Excel look) */
+.subHeader {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: #faf9f8;
+  padding: 0 var(--spacing-md);
+  height: 32px;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+}
+
+.subTab {
+  padding: 4px var(--spacing-md);
+  background: none;
+  border: 1px solid transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.subTab:hover {
+  background-color: #f3f2f1;
+}
+
+.subTabActive {
+  background-color: #ffffff;
+  border-color: var(--color-border-light);
+  border-bottom-color: #ffffff;
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Layout for alerts grid */
+.alertsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Alert item card (Office banner design) */
+.alertCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-light);
+  border-left: 4px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+  gap: var(--spacing-md);
+}
+
+.alertCritical {
+  border-left-color: var(--color-error-border);
+  background-color: #fdf6f6;
+}
+
+.alertWarning {
+  border-left-color: var(--color-warning-border);
+  background-color: #fffdf6;
+}
+
+.alertInfo {
+  border-left-color: var(--color-aging-border);
+  background-color: #fcfdf9;
+}
+
+.alertBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.alertTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.alertMsg {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.alertMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.alertActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconCritical { color: var(--color-error-text); }
+.iconWarning { color: var(--color-warning-text); }
+.iconInfo { color: var(--color-text-secondary); }

@@ -3,6 +3,7 @@ dist
 dist-installer
 out
 release
+docs
 *.db
 *.db-journal
 *.db-shm
