@@ -1,0 +1,173 @@
+/* BOM Page layout split */
+.container {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--spacing-lg);
+  height: 100%;
+}
+
+@media (max-width: 800px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sidebar list of templates */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background-color: #faf9f8;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.templateList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.templateItem {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-grid);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border-grid);
+  text-align: left;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.templateItem:hover {
+  background-color: #f3f2f1;
+}
+
+.activeTemplate {
+  background-color: var(--color-brand-primary-light);
+  border-left: 4px solid var(--color-brand-primary);
+}
+
+.templateName {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.templateDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Main Details panel */
+.detailsPane {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.paneHeader {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: #faf9f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.paneTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Coverage checking control pad */
+.calcCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: #faf9f8;
+  border-bottom: 1px solid var(--color-border-light);
+  flex-wrap: wrap;
+}
+
+.calcLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.calcInput {
+  width: 80px;
+  height: 28px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-align: right;
+  font-weight: bold;
+}
+
+/* Cost Summary Panel */
+.costSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: #deecf9;
+  border-top: 1px solid var(--color-border-light);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-brand);
+}
+
+.costValue {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+}
+
+/* Modal specific inputs */
+.itemListContainer {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.itemSelectorRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-grid);
+}
+
+.itemSelectorRow:last-child {
+  border-bottom: none;
+}
