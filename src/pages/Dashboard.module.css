@@ -1,0 +1,186 @@
+/* Dashboard Grid Layout (Office spreadsheet design) */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Metric Cards Group */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.statCard {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  position: relative;
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--color-border-light);
+  border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+}
+
+.statCardPrimary::before { background-color: var(--color-brand-primary); }
+.statCardError::before { background-color: var(--color-error-border); }
+.statCardWarning::before { background-color: var(--color-warning-border); }
+.statCardAging::before { background-color: var(--color-aging-border); }
+.statCardSuccess::before { background-color: var(--color-ok-border); }
+
+.statLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: var(--font-size-xxl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.statSubtext {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+}
+
+/* Main Dashboard Panel Split (Content Grid) */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+@media (max-width: 900px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reusable Office Dashboard Panel */
+.panel {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-grid);
+  background-color: #faf9f8;
+}
+
+.panelTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.panelContent {
+  padding: var(--spacing-lg);
+  flex: 1;
+}
+
+/* Small widgets / lists inside panels */
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--color-border-grid);
+  font-size: var(--font-size-sm);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.itemMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.itemSub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.itemQuantity {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+}
+
+.qtyLow { color: var(--color-warning-text); }
+.qtyOut { color: var(--color-error-text); }
+.qtyOk { color: var(--color-ok-text); }
+
+/* Simple list table inside panels */
+.simpleTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+.simpleTable th {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background-color: #faf9f8;
+}
+
+.simpleTable td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-grid);
+  color: var(--color-text-primary);
+}
+
+.simpleTable tr:hover td {
+  background-color: var(--color-bg-row-hover);
+}
+
+/* Category breakdown colors */
+.colorDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--spacing-sm);
+}
+
+.chartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 180px;
+}
