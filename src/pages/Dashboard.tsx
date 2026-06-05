@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useInventory } from '../hooks/useInventory.ts'
 import { useAlerts } from '../hooks/useAlerts.ts'
 import { 
@@ -10,10 +10,8 @@ import {
 } from 'recharts'
 import { 
   Package, 
-  AlertTriangle, 
   TrendingDown, 
   DollarSign, 
-  Calendar,
   Activity,
   Plus
 } from 'lucide-react'
@@ -25,7 +23,7 @@ interface DashboardProps {
 
 export default function Dashboard({ setActiveTab }: DashboardProps) {
   const { allItems, categories, transactions, loading: loadingInv } = useInventory()
-  const { activeAlerts, loading: loadingAlerts } = useAlerts()
+  const { loading: loadingAlerts } = useAlerts()
 
   // 1. Calculate Valuation and Status Counts
   const stats = useMemo(() => {
@@ -292,7 +290,6 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                   <tbody>
                     {recentTransactions.map((tx) => {
                       const isAddition = tx.type === 'IN' || tx.type === 'INITIAL'
-                      const isAdjustment = tx.type === 'ADJUSTMENT'
                       let deltaColor = 'var(--color-text-primary)'
                       let deltaSign = ''
                       

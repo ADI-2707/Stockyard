@@ -1,0 +1,277 @@
+/* Spreadsheet Control Header */
+.headerControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  background-color: #ffffff;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  height: 28px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  min-width: 180px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+.filterSelect {
+  height: 28px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  background-color: #ffffff;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+/* Excel Style Grid Table */
+.tableContainer {
+  border: 1px solid var(--color-border-light);
+  background-color: #ffffff;
+  overflow: auto;
+  flex: 1;
+}
+
+.gridTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+.gridTable th {
+  position: sticky;
+  top: 0;
+  background-color: #faf9f8;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-sm);
+  border-right: 1px solid var(--color-border-grid);
+  border-bottom: 2px solid var(--color-border-light);
+  user-select: none;
+}
+
+.gridTable td {
+  padding: var(--spacing-sm);
+  border-right: 1px solid var(--color-border-grid);
+  border-bottom: 1px solid var(--color-border-grid);
+  vertical-align: middle;
+  color: var(--color-text-primary);
+}
+
+.gridTable tr:hover td {
+  background-color: #f3f2f1;
+}
+
+/* Color Status highlighting (Office spreadsheet tint style) */
+.rowNormal {
+  background-color: #ffffff;
+}
+
+.rowLowStock {
+  background-color: #fffdf5; /* subtle yellow-orange tint */
+}
+
+.rowOutOfStock {
+  background-color: #fff5f5; /* subtle red tint */
+}
+
+.rowAging {
+  background-color: #fcfdf0; /* subtle lime-yellow tint */
+}
+
+/* UI Badges */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+}
+
+.badgeOk {
+  background-color: var(--color-ok-bg);
+  color: var(--color-ok-text);
+  border-color: #c3e6cb;
+}
+
+.badgeLow {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border-color: #ffeeba;
+}
+
+.badgeOut {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-color: #f5c6cb;
+}
+
+.badgeAging {
+  background-color: var(--color-aging-bg);
+  color: var(--color-aging-text);
+  border-color: #ffee58;
+}
+
+/* Inline Adjust controls (+ / - buttons) */
+.inlineAdjust {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.adjustBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border-light);
+  background-color: #ffffff;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+}
+
+.adjustBtn:hover {
+  background-color: var(--color-bg-app);
+  border-color: var(--color-border-medium);
+}
+
+.qtyValue {
+  min-width: 40px;
+  text-align: right;
+  font-weight: bold;
+  padding-right: 4px;
+}
+
+/* Modal and form stylings */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-sm);
+  width: 500px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: #faf9f8;
+}
+
+.modalBody {
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+  background-color: #faf9f8;
+}
+
+/* Form inputs */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroup label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.formInput {
+  height: 28px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.textButton {
+  background: none;
+  border: none;
+  color: var(--color-brand-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.textButton:hover {
+  color: var(--color-brand-primary-hover);
+}
