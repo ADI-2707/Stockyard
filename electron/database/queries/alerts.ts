@@ -1,6 +1,6 @@
 import { db } from '../connection'
 import { alerts, items, categories } from '../schema'
-import { eq, and, desc, sql, isNull } from 'drizzle-orm'
+import { eq, and, desc, isNull } from 'drizzle-orm'
 
 function generateId() {
   return crypto.randomUUID()
@@ -89,7 +89,7 @@ export async function createAlert(itemId: string, type: 'LOW_STOCK' | 'OUT_OF_ST
     .get()
 
   if (existing) {
-    return existing.id
+    return null
   }
 
   const alertId = generateId()

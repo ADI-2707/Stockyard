@@ -1,6 +1,6 @@
 import { db } from '../connection'
 import { items, categories, transactions } from '../schema'
-import { eq, and, isNull, sql } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 
 // Standard UUID/ID generator for SQLite records
 function generateId() {

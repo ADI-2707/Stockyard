@@ -12,7 +12,7 @@ import { getAllTransactions, getTransactionsByItemId } from './database/queries/
 import { getActiveAlerts, getResolvedAlerts, acknowledgeAlert, resolveAlert } from './database/queries/alerts'
 import { getAllBOMTemplates, getBOMTemplateDetails, createBOMTemplate, updateBOMTemplate, deleteBOMTemplate, checkBOMCoverage } from './database/queries/bom'
 import { exportCSV } from './services/csvExport'
-import { items, categories, transactions, alerts, bomTemplates, bomItems } from './database/schema'
+import { items, transactions, alerts, bomTemplates, bomItems } from './database/schema'
 
 let mainWindow: BrowserWindow | null = null
 

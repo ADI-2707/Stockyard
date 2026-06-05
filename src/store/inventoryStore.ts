@@ -25,7 +25,7 @@ interface InventoryState {
   clearFilters: () => void
 }
 
-export const useInventoryStore = create<InventoryState>((set, get) => ({
+export const useInventoryStore = create<InventoryState>((set) => ({
   items: [],
   categories: [],
   transactions: [],

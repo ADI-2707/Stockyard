@@ -1,6 +1,5 @@
-import path from 'path'
 
-export function sendNotification(title: string, body: string) {
+export default function sendNotification(title: string, body: string) {
   try {
     const { Notification } = require('electron')
     

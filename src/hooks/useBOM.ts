@@ -22,9 +22,9 @@ export function useBOM() {
     loading,
     fetchTemplates,
     getDetails: (bomId: string) => ipc.bom.getDetails(bomId),
-    createTemplate: (name: string, description: string, itemsList: { itemId: string; quantity: number }[]) => 
+    createTemplate: (name: string, description: string, itemsList: { itemId: string; quantity: number }[]) =>
       ipc.bom.create(name, description, itemsList),
-    updateTemplate: (bomId: string, name: string, description: string, itemsList: { itemId: string; quantity: number }[]) => 
+    updateTemplate: (bomId: string, name: string, description: string, itemsList: { itemId: string; quantity: number }[]) =>
       ipc.bom.update(bomId, name, description, itemsList),
     deleteTemplate: (bomId: string) => ipc.bom.delete(bomId),
     checkCoverage: (bomId: string, buildCount: number) => ipc.bom.checkCoverage(bomId, buildCount)

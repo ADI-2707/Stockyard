@@ -1,8 +1,8 @@
-import { db } from '../connection'
-import { items, categories, alerts } from '../database/schema'
-import { createAlert, resolveAlertsForItem } from '../database/queries/alerts'
-import { eq, and, isNull } from 'drizzle-orm'
-import { sendNotification } from './notifier'
+import { db } from '../database/connection.ts'
+import { items, categories, alerts } from '../database/schema.ts'
+import { createAlert } from '../database/queries/alerts.ts'
+import { eq, and, isNull, sql } from 'drizzle-orm'
+import sendNotification from './notifier.ts'
 
 // Standard helper to calculate days elapsed since a date ISO string
 function getDaysSince(dateStr: string | null): number {
@@ -48,21 +48,21 @@ export async function runAlertScan() {
         // Create critical alert
         const msg = `${name} (${sku}) is completely out of stock!`
         const createdId = await createAlert(itemId, 'OUT_OF_STOCK', 'CRITICAL', msg)
-        
+
         // If a new alert was actually generated, trigger OS notification
-        if (createdId && typeof createdId === 'string') {
+        if (createdId) {
           hasUpdated = true
           sendNotification('Stock Alert - Critical', msg)
         }
-        
+
         // Since it's OUT_OF_STOCK, resolve any LOW_STOCK warning that was active
         const resolved = db.update(alerts)
           .set({ isActive: 0, resolvedAt: new Date().toISOString() })
           .where(and(eq(alerts.itemId, itemId), eq(alerts.type, 'LOW_STOCK'), eq(alerts.isActive, 1)))
           .run()
         if (resolved.changes > 0) hasUpdated = true
-      } 
-      
+      }
+
       // 2. Check Low Stock (WARNING)
       else if (quantity <= threshold) {
         const msg = `${name} (${sku}) is low on stock (${quantity} ${item.unit} remaining, threshold: ${threshold}).`
@@ -75,8 +75,8 @@ export async function runAlertScan() {
           .where(and(eq(alerts.itemId, itemId), eq(alerts.type, 'OUT_OF_STOCK'), eq(alerts.isActive, 1)))
           .run()
         if (resolved.changes > 0) hasUpdated = true
-      } 
-      
+      }
+
       // 3. Stock is healthy: Resolve both OUT_OF_STOCK and LOW_STOCK warnings
       else {
         const resolved = db.update(alerts)

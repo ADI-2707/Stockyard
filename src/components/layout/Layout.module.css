@@ -1,0 +1,171 @@
+/* Microsoft Office Ribbon Layout Styles */
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--color-bg-app);
+}
+
+/* Title Bar representing Office header */
+.titleBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 32px;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-white);
+  padding: 0 var(--spacing-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  user-select: none;
+  border-bottom: 1px solid var(--color-brand-primary-hover);
+}
+
+.titleText {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.titleIcon {
+  color: var(--color-brand-primary-light);
+}
+
+.systemClock {
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+}
+
+/* Ribbon Container holding tabs & actions */
+.ribbon {
+  display: flex;
+  flex-direction: column;
+  background-color: #f3f2f1;
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tab list (Excel sheets look) */
+.tabs {
+  display: flex;
+  background-color: var(--color-brand-primary);
+  padding-left: var(--spacing-md);
+  height: 36px;
+  align-items: flex-end;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-lg);
+  height: 30px;
+  background-color: transparent;
+  color: #c8e1f5;
+  border: none;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+  transition: background-color 0.1s, color 0.1s;
+}
+
+.tab:hover {
+  background-color: var(--color-brand-primary-hover);
+  color: var(--color-text-white);
+}
+
+.activeTab {
+  background-color: var(--color-bg-app);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 8px;
+  background-color: var(--color-error-text);
+  color: white;
+  margin-left: 2px;
+}
+
+/* Ribbon Command Bar holding quick actions for selected page */
+.commandBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  background-color: #ffffff;
+  padding: 0 var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 28px;
+  padding: 0 var(--spacing-md);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: background-color 0.1s, border-color 0.1s;
+}
+
+.actionButton:hover {
+  background-color: var(--color-bg-app);
+  border-color: var(--color-border-medium);
+}
+
+.primaryActionButton {
+  background-color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  color: var(--color-text-white);
+}
+
+.primaryActionButton:hover {
+  background-color: var(--color-brand-primary-hover);
+  border-color: var(--color-brand-primary-hover);
+}
+
+.pageTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+/* Main Workspace Canvas Container */
+.workspace {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  background-color: #ffffff; /* Excel spreadsheet white grid area */
+}
