@@ -54,12 +54,6 @@ export default function Transactions() {
     return new Date(dateStr).toLocaleString()
   }
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(val)
-  }
 
   // ------------------------------------------------
   // Export Ledger to CSV

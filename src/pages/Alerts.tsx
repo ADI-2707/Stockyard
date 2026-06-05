@@ -13,7 +13,7 @@ import styles from './Alerts.module.css'
 import inventoryStyles from './Inventory.module.css'
 
 export default function Alerts() {
-  const { activeAlerts, resolvedAlerts, loading, acknowledge, resolve, refresh } = useAlerts()
+  const { activeAlerts, resolvedAlerts, loading, acknowledge, resolve } = useAlerts()
   const [activeSubTab, setActiveSubTab] = useState<'active' | 'resolved'>('active')
 
   const formatDateTime = (dateStr: string) => {

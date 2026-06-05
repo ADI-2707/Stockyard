@@ -1,13 +1,37 @@
+import { useState } from 'react'
+import Layout from './components/layout/Layout.tsx'
+import Dashboard from './pages/Dashboard.tsx'
+import Inventory from './pages/Inventory.tsx'
+import BOM from './pages/BOM.tsx'
+import Alerts from './pages/Alerts.tsx'
+import Transactions from './pages/Transactions.tsx'
+import Settings from './pages/Settings.tsx'
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard')
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard setActiveTab={setActiveTab} />
+      case 'inventory':
+        return <Inventory />
+      case 'bom':
+        return <BOM />
+      case 'alerts':
+        return <Alerts />
+      case 'transactions':
+        return <Transactions />
+      case 'settings':
+        return <Settings />
+      default:
+        return <Dashboard setActiveTab={setActiveTab} />
+    }
+  }
+
   return (
-    <div style={{ padding: '40px', fontFamily: 'var(--font-family)', backgroundColor: 'var(--color-bg-app)', height: '100vh' }}>
-      <div style={{ backgroundColor: 'var(--color-bg-card)', padding: '24px', border: '1px solid var(--color-border-light)', borderRadius: 'var(--border-radius-sm)', maxWidth: '400px', boxShadow: 'var(--shadow-sm)' }}>
-        <h1 style={{ color: 'var(--color-brand-primary)', marginBottom: '12px' }}>Stockyard</h1>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-base)' }}>
-          Project setup and design tokens initialized. Database connection and UI components will be implemented next.
-        </p>
-      </div>
-    </div>
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+      {renderContent()}
+    </Layout>
   )
 }
