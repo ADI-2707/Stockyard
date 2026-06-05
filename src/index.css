@@ -1,0 +1,163 @@
+/* Design System Tokens - Microsoft Office Inspired Style */
+:root {
+  /* Typography Scale */
+  --font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  
+  --font-size-xs: 0.75rem;     /* 12px - details, micro labels */
+  --font-size-sm: 0.8125rem;   /* 13px - MS Office standard table/grid text */
+  --font-size-base: 0.875rem;  /* 14px - standard text & inputs */
+  --font-size-md: 0.9375rem;   /* 15px - sub-headers, sidebar links */
+  --font-size-lg: 1.125rem;    /* 18px - section titles */
+  --font-size-xl: 1.375rem;    /* 22px - dialog titles, ribbon headers */
+  --font-size-xxl: 1.75rem;   /* 28px - dashboard valuation numbers */
+
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.8;
+
+  /* Spacing Scale (Excel cell alignments & padding) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  --spacing-xxxl: 48px;
+
+  /* Layout and Component Dimensions */
+  --sidebar-width: 200px;
+  --header-height: 44px;
+  --ribbon-height: 80px;
+  --input-height: 28px;        /* Flat, compact inputs like Excel edit-line */
+  --button-height: 28px;
+  
+  /* Borders (Office uses sharp corners) */
+  --border-radius-sm: 2px;
+  --border-radius-md: 4px;
+  --border-radius-none: 0px;
+  
+  /* Color Palette - MS Office Slate & Navy Blue */
+  --color-brand-primary: #005a9e;        /* Classic Windows / Office Blue */
+  --color-brand-primary-hover: #004578;
+  --color-brand-primary-light: #deecf9;  /* Selection highlight blue */
+  --color-brand-primary-border: #8a2be2;
+  
+  /* Neutral Backgrounds */
+  --color-bg-app: #f3f2f1;      /* Modern Office grey canvas */
+  --color-bg-card: #ffffff;     /* Sheet / Grid background */
+  --color-bg-sidebar: #f3f2f1;  /* Matching ribbon background */
+  --color-bg-header: #005a9e;   /* Ribbon active header tab background */
+  --color-bg-row-hover: #f3f2f1;
+  --color-bg-row-selected: #f3f2f1;
+  --color-bg-input: #ffffff;
+
+  /* Borders & Grid Lines */
+  --color-border-grid: #edebe9;  /* Thin Excel-style gridline */
+  --color-border-light: #d2d0ce; /* Standard border */
+  --color-border-medium: #a19f9d;/* Hovered/Selected border */
+  --color-border-dark: #605e5c;  
+  
+  /* Typography Colors */
+  --color-text-primary: #323130;
+  --color-text-secondary: #605e5c;
+  --color-text-disabled: #a19f9d;
+  --color-text-white: #ffffff;
+  --color-text-brand: #005a9e;
+
+  /* Semantic / Health indicators (Muted MS Office style alerts) */
+  --color-ok-bg: #dff6dd;
+  --color-ok-text: #107c41;
+  --color-ok-border: #107c41;
+
+  --color-warning-bg: #fff4ce;
+  --color-warning-text: #794f00;
+  --color-warning-border: #794f00;
+
+  --color-error-bg: #fde7e9;
+  --color-error-text: #a80000;
+  --color-error-border: #a80000;
+
+  --color-aging-bg: #fff176;
+  --color-aging-text: #5d4037;
+  --color-aging-border: #fbc02d;
+
+  /* Shadow (Office uses flat borders with very thin elevation) */
+  --shadow-sm: 0 1.6px 3.6px 0 rgba(0,0,0,0.132), 0 0.3px 0.9px 0 rgba(0,0,0,0.108);
+  --shadow-md: 0 3.2px 7.2px 0 rgba(0,0,0,0.132), 0 0.6px 1.8px 0 rgba(0,0,0,0.108);
+  --shadow-lg: 0 6.4px 14.4px 0 rgba(0,0,0,0.132), 0 1.2px 3.6px 0 rgba(0,0,0,0.108);
+}
+
+/* Base resets and application shell sizing */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-app);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Desktop app window wrapper handles internal scrolling */
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Custom Scrollbars (Excel style) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f2f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c8c6c4;
+  border: 2px solid #f3f2f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a19f9d;
+}
+
+/* Typography styles */
+h1 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+h3 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* Basic utility layout classes */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.align-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
