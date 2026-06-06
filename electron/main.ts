@@ -23,7 +23,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     title: 'Stockyard - Inventory Component Tracker',
-    icon: path.join(process.cwd(), 'build/stockyard_icon.ico'),
+    // In dev: load icon from project root. In packaged: exe already has icon embedded.
+    icon: app.isPackaged ? undefined : path.join(process.cwd(), 'build/stockyard_icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
