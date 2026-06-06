@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import pkg from '../../../package.json'
 import { 
   LayoutDashboard, 
   Package, 
@@ -96,6 +97,18 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
         <div className={styles.content}>
           {children}
         </div>
+      </div>
+
+      {/* Subtle version footer */}
+      <div style={{ 
+        padding: '2px 8px', 
+        fontSize: '10px', 
+        color: 'var(--color-text-secondary)', 
+        textAlign: 'center', 
+        borderTop: '1px solid var(--color-border-light)', 
+        backgroundColor: 'var(--color-bg-app)' 
+      }}>
+        v{pkg.version}
       </div>
     </div>
   )
