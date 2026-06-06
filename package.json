@@ -1,6 +1,6 @@
 {
   "name": "stockyard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Desktop Application for Panel & Body Manufacturing Component Tracking",
   "main": "dist-electron/main.js",
   "scripts": {

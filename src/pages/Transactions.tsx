@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useInventory } from '../hooks/useInventory.ts'
 import { ipc } from '../lib/ipc.ts'
 import { 
@@ -40,6 +40,20 @@ export default function Transactions() {
       return true
     })
   }, [transactions, search, typeFilter, operatorFilter])
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 100
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, typeFilter, operatorFilter])
+
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE)
+  const paginatedTransactions = useMemo(() => {
+    return filteredTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  }, [filteredTransactions, currentPage])
 
   // Extract unique operator names for filtering dropdown
   const operatorsList = useMemo(() => {
@@ -180,7 +194,7 @@ export default function Transactions() {
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((tx) => {
+              {paginatedTransactions.map((tx) => {
                 const isAdd = tx.type === 'IN' || tx.type === 'INITIAL'
                 const afterQty = isAdd ? tx.quantityBefore + tx.quantity : tx.quantityBefore - tx.quantity
                 
@@ -219,6 +233,36 @@ export default function Transactions() {
               })}
             </tbody>
           </table>
+        )}
+
+        {/* Pagination Controls */}
+        {filteredTransactions.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px var(--spacing-md)', borderTop: '1px solid var(--color-border-grid)', backgroundColor: '#faf9f8' }}>
+            <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} of {filteredTransactions.length} transactions
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={inventoryStyles.actionButton}
+                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold' }}>
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className={inventoryStyles.actionButton}
+                style={{ opacity: currentPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
