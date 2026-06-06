@@ -196,7 +196,7 @@ export default function BOM() {
       return
     }
 
-    const headers = ['SKU', 'Component Name', 'Required Quantity', 'Current Stock', 'Shortage Deficit', 'Unit Cost ($)', 'Total Procurement Cost ($)']
+    const headers = ['SKU', 'Component Name', 'Required Quantity', 'Current Stock', 'Shortage Deficit', 'Unit Cost (₹)', 'Total Procurement Cost (₹)']
     const rows = shortItems.map(r => [
       r.sku,
       r.name,
@@ -230,9 +230,9 @@ export default function BOM() {
   }, [coverageResults])
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(val)
   }
 

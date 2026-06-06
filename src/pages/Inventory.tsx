@@ -327,9 +327,9 @@ export default function Inventory() {
   }
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(val)
   }
 
@@ -635,7 +635,7 @@ export default function Inventory() {
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label>Cost per Unit ($) *</label>
+                    <label>Cost per Unit (₹) *</label>
                     <input
                       type="number"
                       step="0.01"
@@ -807,7 +807,7 @@ export default function Inventory() {
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label>Cost per Unit ($)</label>
+                      <label>Cost per Unit (₹)</label>
                       <input
                         type="number"
                         step="0.01"

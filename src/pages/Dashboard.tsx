@@ -11,7 +11,7 @@ import {
 import { 
   Package, 
   TrendingDown, 
-  DollarSign, 
+  IndianRupee, 
   Activity,
   Plus
 } from 'lucide-react'
@@ -106,9 +106,9 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   }, [transactions])
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(val)
   }
 
@@ -336,7 +336,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         <div className={styles.panel}>
           <div className={styles.panelHeader}>
             <div className={styles.panelTitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DollarSign size={16} color="var(--color-brand-primary)" />
+              <IndianRupee size={16} color="var(--color-brand-primary)" />
               <span>Asset Valuation Share</span>
             </div>
           </div>
