@@ -7,8 +7,7 @@ import {
   Receipt, 
   ClipboardList, 
   Settings as SettingsIcon,
-  Clock,
-  Database
+  Clock
 } from 'lucide-react'
 import { useAlertStore } from '../../store/alertStore'
 import styles from './Layout.module.css'
@@ -60,8 +59,7 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
       {/* MS Office Top Titlebar */}
       <div className={styles.titleBar}>
         <div className={styles.titleText}>
-          <Database size={14} className={styles.titleIcon} />
-          <span>Stockyard Component Tracking (Accounts Mode)</span>
+          <span>Know what's in stock. Always!</span>
         </div>
         <div className={styles.systemClock}>
           <Clock size={12} style={{ marginRight: '6px', verticalAlign: 'middle', display: 'inline' }} />
