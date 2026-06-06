@@ -15,6 +15,7 @@ import inventoryStyles from './Inventory.module.css'
 export default function Alerts() {
   const { activeAlerts, resolvedAlerts, loading, acknowledge, resolve } = useAlerts()
   const [activeSubTab, setActiveSubTab] = useState<'active' | 'resolved'>('active')
+  const [operators, setOperators] = useState<Record<string, string>>({})
 
   const formatDateTime = (dateStr: string) => {
     if (!dateStr || dateStr === 'CURRENT_TIMESTAMP') {
@@ -104,35 +105,53 @@ export default function Alerts() {
                     </div>
 
                     <div className={styles.alertActions}>
-                      {!isAck && (
-                        <button
-                          onClick={() => {
-                            const performedBy = prompt('Enter operator initials / name to acknowledge alert:', 'Accounts')
-                            if (performedBy !== null) {
-                              acknowledge(alert.id, performedBy || 'Accounts')
-                            }
-                          }}
-                          className={inventoryStyles.actionButton}
-                          style={{ height: '24px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          title="Acknowledge alert (snooze notification)"
-                        >
-                          <BellOff size={11} /> Acknowledge
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => {
-                          const performedBy = prompt('Enter operator initials / name to resolve alert:', 'Accounts')
-                          if (performedBy !== null) {
-                            resolve(alert.id, performedBy || 'Accounts')
-                          }
-                        }}
-                        className={inventoryStyles.actionButton}
-                        style={{ height: '24px', fontSize: '11px', backgroundColor: 'var(--color-brand-primary-light)', color: 'var(--color-brand-primary)', borderColor: 'var(--color-brand-primary-light)', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        title="Mark alert resolved"
-                      >
-                        <Check size={11} /> Resolve
-                      </button>
+                      {(() => {
+                        const opValue = operators[alert.id] !== undefined ? operators[alert.id] : 'Accounts'
+                        return (
+                          <>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <label style={{ fontSize: '9px', color: 'var(--color-text-secondary)', fontWeight: 'bold' }}>Operator *</label>
+                              <input
+                                type="text"
+                                required
+                                value={opValue}
+                                onChange={(e) => setOperators({ ...operators, [alert.id]: e.target.value })}
+                                style={{
+                                  padding: '2px 6px',
+                                  fontSize: '11px',
+                                  border: '1px solid var(--color-border-grid)',
+                                  borderRadius: '3px',
+                                  width: '80px',
+                                  height: '24px',
+                                  boxSizing: 'border-box',
+                                  backgroundColor: 'var(--color-bg-app)',
+                                  color: 'var(--color-text-primary)'
+                                }}
+                              />
+                            </div>
+
+                            {!isAck && (
+                              <button
+                                onClick={() => acknowledge(alert.id, opValue || 'Accounts')}
+                                className={inventoryStyles.actionButton}
+                                style={{ height: '24px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="Acknowledge alert (snooze notification)"
+                              >
+                                <BellOff size={11} /> Acknowledge
+                              </button>
+                            )}
+                            
+                            <button
+                              onClick={() => resolve(alert.id, opValue || 'Accounts')}
+                              className={inventoryStyles.actionButton}
+                              style={{ height: '24px', fontSize: '11px', backgroundColor: 'var(--color-brand-primary-light)', color: 'var(--color-brand-primary)', borderColor: 'var(--color-brand-primary-light)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              title="Mark alert resolved"
+                            >
+                              <Check size={11} /> Resolve
+                            </button>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                 )
