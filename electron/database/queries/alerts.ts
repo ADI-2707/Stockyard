@@ -1,5 +1,5 @@
 import { db } from '../connection'
-import { alerts, items, categories } from '../schema'
+import { alerts, items, categories, transactions } from '../schema'
 import { eq, and, desc, isNull } from 'drizzle-orm'
 
 function generateId() {
@@ -53,25 +53,75 @@ export async function getResolvedAlerts() {
     .all()
 }
 
-export async function acknowledgeAlert(id: string) {
+export async function acknowledgeAlert(id: string, performedBy?: string) {
   const timestamp = new Date().toISOString()
-  return db
-    .update(alerts)
-    .set({ acknowledgedAt: timestamp })
-    .where(eq(alerts.id, id))
-    .run()
+  return db.transaction((tx) => {
+    const alert = tx.select().from(alerts).where(eq(alerts.id, id)).get()
+    if (!alert) {
+      throw new Error('Alert not found')
+    }
+    if (!alert.itemId) {
+      throw new Error('Alert is not associated with any component')
+    }
+
+    const item = tx.select().from(items).where(eq(items.id, alert.itemId)).get()
+
+    tx.update(alerts)
+      .set({ acknowledgedAt: timestamp })
+      .where(eq(alerts.id, id))
+      .run()
+
+    tx.insert(transactions)
+      .values({
+        id: generateId(),
+        itemId: alert.itemId,
+        type: 'ALERT_ACK',
+        quantity: 0,
+        quantityBefore: item?.quantity ?? 0,
+        performedBy: performedBy || 'system',
+        reference: `Alert ID: ${id.slice(0, 8)}`,
+        notes: `Acknowledged active alert: [${alert.type}] ${alert.message}`,
+        createdAt: timestamp
+      })
+      .run()
+  })
 }
 
-export async function resolveAlert(id: string) {
+export async function resolveAlert(id: string, performedBy?: string) {
   const timestamp = new Date().toISOString()
-  return db
-    .update(alerts)
-    .set({
-      isActive: 0,
-      resolvedAt: timestamp
-    })
-    .where(eq(alerts.id, id))
-    .run()
+  return db.transaction((tx) => {
+    const alert = tx.select().from(alerts).where(eq(alerts.id, id)).get()
+    if (!alert) {
+      throw new Error('Alert not found')
+    }
+    if (!alert.itemId) {
+      throw new Error('Alert is not associated with any component')
+    }
+
+    const item = tx.select().from(items).where(eq(items.id, alert.itemId)).get()
+
+    tx.update(alerts)
+      .set({
+        isActive: 0,
+        resolvedAt: timestamp
+      })
+      .where(eq(alerts.id, id))
+      .run()
+
+    tx.insert(transactions)
+      .values({
+        id: generateId(),
+        itemId: alert.itemId,
+        type: 'ALERT_RESOLVE',
+        quantity: 0,
+        quantityBefore: item?.quantity ?? 0,
+        performedBy: performedBy || 'system',
+        reference: `Alert ID: ${id.slice(0, 8)}`,
+        notes: `Resolved alert: [${alert.type}] ${alert.message}`,
+        createdAt: timestamp
+      })
+      .run()
+  })
 }
 
 export async function createAlert(itemId: string, type: 'LOW_STOCK' | 'OUT_OF_STOCK' | 'AGING', severity: 'INFO' | 'WARNING' | 'CRITICAL', message: string) {

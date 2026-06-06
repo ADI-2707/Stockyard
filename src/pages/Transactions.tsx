@@ -65,7 +65,15 @@ export default function Transactions() {
   }, [transactions])
 
   const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString()
+    if (!dateStr || dateStr === 'CURRENT_TIMESTAMP') {
+      return 'N/A'
+    }
+    try {
+      const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z')
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleString()
+    } catch {
+      return dateStr || 'N/A'
+    }
   }
 
 

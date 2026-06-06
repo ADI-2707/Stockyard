@@ -45,6 +45,14 @@ export function runMigrations() {
     console.log('Running SQLite migrations from:', migrationsFolder)
     migrate(db, { migrationsFolder })
     console.log('Migrations completed successfully.')
+
+    // Clean up any legacy literal 'CURRENT_TIMESTAMP' values
+    const timestamp = new Date().toISOString()
+    sqlite.prepare("UPDATE items SET added_at = ? WHERE added_at = 'CURRENT_TIMESTAMP'").run(timestamp)
+    sqlite.prepare("UPDATE transactions SET created_at = ? WHERE created_at = 'CURRENT_TIMESTAMP'").run(timestamp)
+    sqlite.prepare("UPDATE alerts SET triggered_at = ? WHERE triggered_at = 'CURRENT_TIMESTAMP'").run(timestamp)
+    sqlite.prepare("UPDATE bom_templates SET created_at = ? WHERE created_at = 'CURRENT_TIMESTAMP'").run(timestamp)
+    console.log('Cleaned up legacy database timestamps.')
   } catch (error) {
     console.error('Failed to run database migrations:', error)
   }

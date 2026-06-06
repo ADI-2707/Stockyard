@@ -314,10 +314,14 @@ export default function Inventory() {
     if (!editItemData) return
 
     try {
-      await ipc.items.update(editItemData.id, {
-        ...editItemData,
-        maxStock: editItemData.maxStock ? parseInt(editItemData.maxStock) : null
-      })
+      await ipc.items.update(
+        editItemData.id,
+        {
+          ...editItemData,
+          maxStock: editItemData.maxStock ? parseInt(editItemData.maxStock) : null
+        },
+        editItemData.performedBy || 'Accounts'
+      )
 
       // Update selected item detail views
       const updated = await ipc.items.getById(editItemData.id)
@@ -782,7 +786,7 @@ export default function Inventory() {
                 {!editMode && (
                   <button
                     onClick={() => {
-                      setEditItemData({ ...selectedItem })
+                      setEditItemData({ ...selectedItem, performedBy: 'Accounts' })
                       setEditMode(true)
                     }}
                     className={styles.actionButton}
@@ -911,6 +915,17 @@ export default function Inventory() {
                       type="text"
                       value={editItemData.unit}
                       onChange={(e) => setEditItemData({ ...editItemData, unit: e.target.value })}
+                      className={styles.formInput}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>Operator Initials / Performed By *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editItemData.performedBy || ''}
+                      onChange={(e) => setEditItemData({ ...editItemData, performedBy: e.target.value })}
                       className={styles.formInput}
                     />
                   </div>

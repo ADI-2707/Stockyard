@@ -17,7 +17,15 @@ export default function Alerts() {
   const [activeSubTab, setActiveSubTab] = useState<'active' | 'resolved'>('active')
 
   const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString()
+    if (!dateStr || dateStr === 'CURRENT_TIMESTAMP') {
+      return 'N/A'
+    }
+    try {
+      const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z')
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleString()
+    } catch {
+      return dateStr || 'N/A'
+    }
   }
 
   return (
@@ -98,7 +106,12 @@ export default function Alerts() {
                     <div className={styles.alertActions}>
                       {!isAck && (
                         <button
-                          onClick={() => acknowledge(alert.id)}
+                          onClick={() => {
+                            const performedBy = prompt('Enter operator initials / name to acknowledge alert:', 'Accounts')
+                            if (performedBy !== null) {
+                              acknowledge(alert.id, performedBy || 'Accounts')
+                            }
+                          }}
                           className={inventoryStyles.actionButton}
                           style={{ height: '24px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
                           title="Acknowledge alert (snooze notification)"
@@ -108,7 +121,12 @@ export default function Alerts() {
                       )}
                       
                       <button
-                        onClick={() => resolve(alert.id)}
+                        onClick={() => {
+                          const performedBy = prompt('Enter operator initials / name to resolve alert:', 'Accounts')
+                          if (performedBy !== null) {
+                            resolve(alert.id, performedBy || 'Accounts')
+                          }
+                        }}
                         className={inventoryStyles.actionButton}
                         style={{ height: '24px', fontSize: '11px', backgroundColor: 'var(--color-brand-primary-light)', color: 'var(--color-brand-primary)', borderColor: 'var(--color-brand-primary-light)', display: 'flex', alignItems: 'center', gap: '4px' }}
                         title="Mark alert resolved"

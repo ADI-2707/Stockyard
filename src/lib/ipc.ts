@@ -26,8 +26,8 @@ export const ipc = {
     getById: (id: string) => window.electron.invoke('items:getById', id),
     create: (data: any, performedBy: string) => 
       window.electron.invoke('items:create', { data, performedBy }),
-    update: (id: string, data: any) => 
-      window.electron.invoke('items:update', { id, data }),
+    update: (id: string, data: any, performedBy?: string) => 
+      window.electron.invoke('items:update', { id, data, performedBy }),
     adjustStock: (params: {
       itemId: string
       quantityChange: number
@@ -49,8 +49,8 @@ export const ipc = {
   alerts: {
     getActive: () => window.electron.invoke('alerts:getActive'),
     getResolved: () => window.electron.invoke('alerts:getResolved'),
-    acknowledge: (id: string) => window.electron.invoke('alerts:acknowledge', id),
-    resolve: (id: string) => window.electron.invoke('alerts:resolve', id)
+    acknowledge: (id: string, performedBy?: string) => window.electron.invoke('alerts:acknowledge', { id, performedBy }),
+    resolve: (id: string, performedBy?: string) => window.electron.invoke('alerts:resolve', { id, performedBy })
   },
 
   // BOM Templates

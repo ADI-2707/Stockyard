@@ -8,8 +8,8 @@ interface AlertState {
   
   fetchActiveAlerts: () => Promise<void>
   fetchResolvedAlerts: () => Promise<void>
-  acknowledgeAlert: (id: string) => Promise<void>
-  resolveAlert: (id: string) => Promise<void>
+  acknowledgeAlert: (id: string, performedBy?: string) => Promise<void>
+  resolveAlert: (id: string, performedBy?: string) => Promise<void>
   subscribeToAlerts: () => () => void
 }
 
@@ -38,18 +38,18 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     }
   },
 
-  acknowledgeAlert: async (id: string) => {
+  acknowledgeAlert: async (id: string, performedBy?: string) => {
     try {
-      await ipc.alerts.acknowledge(id)
+      await ipc.alerts.acknowledge(id, performedBy)
       await get().fetchActiveAlerts()
     } catch (error) {
       console.error('Failed to acknowledge alert:', error)
     }
   },
 
-  resolveAlert: async (id: string) => {
+  resolveAlert: async (id: string, performedBy?: string) => {
     try {
-      await ipc.alerts.resolve(id)
+      await ipc.alerts.resolve(id, performedBy)
       await get().fetchActiveAlerts()
       await get().fetchResolvedAlerts()
     } catch (error) {

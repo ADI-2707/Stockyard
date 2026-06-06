@@ -78,7 +78,8 @@ export async function createItem(data: any, performedBy: string) {
           quantityBefore: 0,
           performedBy: performedBy || 'system',
           reference: 'Initial Setup',
-          notes: 'Initial stock recorded upon creation.'
+          notes: 'Initial stock recorded upon creation.',
+          createdAt: timestamp
         })
         .run()
     }
@@ -87,23 +88,44 @@ export async function createItem(data: any, performedBy: string) {
   })
 }
 
-export async function updateItem(id: string, data: any) {
-  return db
-    .update(items)
-    .set({
-      name: data.name,
-      sku: data.sku,
-      categoryId: data.categoryId,
-      unit: data.unit,
-      threshold: data.threshold,
-      maxStock: data.maxStock,
-      location: data.location,
-      costPerUnit: data.costPerUnit,
-      supplier: data.supplier,
-      notes: data.notes
-    })
-    .where(eq(items.id, id))
-    .run()
+export async function updateItem(id: string, data: any, performedBy?: string) {
+  const timestamp = new Date().toISOString()
+
+  return db.transaction((tx) => {
+    // Get current item for quantity snapshot
+    const current = tx.select().from(items).where(eq(items.id, id)).get()
+
+    tx.update(items)
+      .set({
+        name: data.name,
+        sku: data.sku,
+        categoryId: data.categoryId,
+        unit: data.unit,
+        threshold: data.threshold,
+        maxStock: data.maxStock,
+        location: data.location,
+        costPerUnit: data.costPerUnit,
+        supplier: data.supplier,
+        notes: data.notes
+      })
+      .where(eq(items.id, id))
+      .run()
+
+    // Log an EDIT transaction so metadata changes appear in the ledger
+    tx.insert(transactions)
+      .values({
+        id: generateId(),
+        itemId: id,
+        type: 'EDIT',
+        quantity: 0,
+        quantityBefore: current?.quantity ?? 0,
+        performedBy: performedBy || 'system',
+        reference: null,
+        notes: `Component details updated (name, SKU, category, thresholds, etc.)`,
+        createdAt: timestamp
+      })
+      .run()
+  })
 }
 
 export async function adjustStock(
@@ -149,7 +171,8 @@ export async function adjustStock(
         quantityBefore: currentQty,
         performedBy: performedBy || 'system',
         reference: reference || null,
-        notes: notes || null
+        notes: notes || null,
+        createdAt: timestamp
       })
       .run()
 

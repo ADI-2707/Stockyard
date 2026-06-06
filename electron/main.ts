@@ -105,8 +105,8 @@ ipcMain.handle('items:create', async (_, { data, performedBy }) => {
   await runAlertScan()
   return result
 })
-ipcMain.handle('items:update', async (_, { id, data }) => {
-  const result = await updateItem(id, data)
+ipcMain.handle('items:update', async (_, { id, data, performedBy }) => {
+  const result = await updateItem(id, data, performedBy)
   // Run alert engine to reflect potential threshold or category threshold changes
   await runAlertScan()
   return result
@@ -138,14 +138,14 @@ ipcMain.handle('alerts:getActive', async () => {
 ipcMain.handle('alerts:getResolved', async () => {
   return getResolvedAlerts()
 })
-ipcMain.handle('alerts:acknowledge', async (_, id) => {
-  const result = await acknowledgeAlert(id)
+ipcMain.handle('alerts:acknowledge', async (_, { id, performedBy }) => {
+  const result = await acknowledgeAlert(id, performedBy)
   // Push update event to renderer so UI stores reload alert counts
   if (mainWindow) mainWindow.webContents.send('alerts:updated')
   return result
 })
-ipcMain.handle('alerts:resolve', async (_, id) => {
-  const result = await resolveAlert(id)
+ipcMain.handle('alerts:resolve', async (_, { id, performedBy }) => {
+  const result = await resolveAlert(id, performedBy)
   if (mainWindow) mainWindow.webContents.send('alerts:updated')
   return result
 })
