@@ -194,8 +194,8 @@
   background-color: #ffffff;
   border: 1px solid var(--color-border-medium);
   border-radius: var(--border-radius-sm);
-  width: 500px;
-  max-width: 90vw;
+  width: 750px;
+  max-width: 95vw;
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
@@ -275,3 +275,37 @@
 .textButton:hover {
   color: var(--color-brand-primary-hover);
 }
+
+.actionButton {
+  height: var(--button-height);
+  padding: 0 var(--spacing-md);
+  border: 1px solid var(--color-border-medium);
+  background-color: #ffffff;
+  color: var(--color-text-primary);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.actionButton:hover {
+  background-color: var(--color-bg-app);
+  border-color: var(--color-border-dark);
+}
+
+.primaryActionButton {
+  background-color: var(--color-brand-primary);
+  color: #ffffff;
+  border-color: var(--color-brand-primary);
+}
+
+.primaryActionButton:hover {
+  background-color: var(--color-brand-primary-hover);
+  border-color: var(--color-brand-primary-hover);
+  color: #ffffff;
+}
+

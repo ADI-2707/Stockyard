@@ -333,6 +333,14 @@ export default function Inventory() {
     }).format(val)
   }
 
+  const formatSqlDate = (dateStr: string | null) => {
+    if (!dateStr) return 'Never'
+    try {
+      const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z')
+      return isNaN(d.getTime()) ? 'Invalid Date' : d.toLocaleString()
+    } catch { return 'Invalid Date' }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 'var(--spacing-md)' }}>
 
@@ -726,7 +734,7 @@ export default function Inventory() {
           <div className={styles.modalContent} style={{ width: '600px' }}>
             <div className={styles.modalHeader}>
               <h3>Inspect: {selectedItem.sku}</h3>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {!editMode && (
                   <button
                     onClick={() => {
@@ -734,20 +742,20 @@ export default function Inventory() {
                       setEditMode(true)
                     }}
                     className={styles.actionButton}
-                    style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <Edit3 size={12} /> Edit Item
+                    <Edit3 size={14} /> Edit Item
                   </button>
                 )}
                 <button
                   onClick={() => handleDeleteItem(selectedItem.id)}
                   className={styles.actionButton}
-                  style={{ color: 'var(--color-error-text)', borderColor: 'var(--color-error-border)', padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  style={{ color: 'var(--color-error-text)', borderColor: 'var(--color-error-text)', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  <Trash2 size={12} /> Discontinue
+                  <Trash2 size={14} /> Discontinue
                 </button>
-                <button onClick={() => setShowDetailModal(false)} className={styles.adjustBtn}>
-                  <X size={14} />
+                <button onClick={() => setShowDetailModal(false)} className={styles.actionButton} style={{ padding: '0 8px' }}>
+                  <X size={16} />
                 </button>
               </div>
             </div>
@@ -900,7 +908,7 @@ export default function Inventory() {
                       <div><strong>Base Pricing:</strong> {formatCurrency(selectedItem.costPerUnit)}</div>
                       <div><strong>Reorder Threshold:</strong> {selectedItem.threshold} {selectedItem.unit}</div>
                       <div><strong>Max Stock:</strong> {selectedItem.maxStock || 'None'}</div>
-                      <div><strong>Last Moved At:</strong> {selectedItem.lastMovedAt ? new Date(selectedItem.lastMovedAt).toLocaleString() : 'Never'}</div>
+                      <div><strong>Last Moved At:</strong> {formatSqlDate(selectedItem.lastMovedAt)}</div>
                     </div>
                   </div>
 
@@ -908,7 +916,7 @@ export default function Inventory() {
                   <form onSubmit={handleDetailedAdjust} style={{ borderBottom: '1px solid var(--color-border-grid)', paddingBottom: '16px' }}>
                     <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold', marginBottom: '8px' }}>Log Inventory Movement / Adjustment</h4>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '10px', marginBottom: '10px' }}>
                       <div className={styles.formGroup}>
                         <label>Movement Type</label>
                         <select
@@ -967,7 +975,7 @@ export default function Inventory() {
                           className={styles.formInput}
                         />
                       </div>
-                      <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`} style={{ height: '28px' }}>
+                      <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
                         Post Ledger Move
                       </button>
                     </div>
@@ -979,7 +987,7 @@ export default function Inventory() {
                       <History size={14} /> Item Transaction History
                     </h4>
                     <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-border-grid)' }}>
-                      <table className={styles.simpleTable}>
+                      <table className={styles.gridTable}>
                         <thead>
                           <tr>
                             <th>Date</th>
@@ -1001,7 +1009,7 @@ export default function Inventory() {
                             itemHistory.map((tx) => (
                               <tr key={tx.id}>
                                 <td style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                                  {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {formatSqlDate(tx.createdAt)}
                                 </td>
                                 <td>
                                   <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '1px 4px', borderRadius: '2px', backgroundColor: tx.type === 'IN' || tx.type === 'INITIAL' ? '#e2f0d9' : tx.type === 'OUT' ? '#fbe5d6' : '#fff2cc', color: tx.type === 'IN' || tx.type === 'INITIAL' ? '#385723' : tx.type === 'OUT' ? '#c65911' : '#7f6000' }}>
