@@ -16,6 +16,7 @@ module.exports = {
     }
   ],
   win: {
+    icon: 'build/stockyard_icon.ico',
     target: [
       {
         target: 'nsis',
