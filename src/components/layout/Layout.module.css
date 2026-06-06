@@ -9,8 +9,9 @@
 
 /* Title Bar representing Office header */
 .titleBar {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   height: 32px;
   background-color: var(--color-brand-primary);
@@ -23,9 +24,21 @@
 }
 
 .titleText {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.titleVersion {
+  font-size: 10px;
+  font-weight: var(--font-weight-normal);
+  opacity: 0.6;
+  letter-spacing: 0.03em;
+  margin-right: auto;
 }
 
 .titleIcon {
