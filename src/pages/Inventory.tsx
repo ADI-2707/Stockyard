@@ -366,37 +366,51 @@ export default function Inventory() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 'var(--spacing-md)' }}>
+    <div className={styles.container}>
+      {/* 1. Left Sidebar: Categories panel */}
+      <div className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
+          <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold' }}>Categories</h3>
+        </div>
+        <div className={styles.categoryList}>
+          {categories.map((cat: any) => (
+            <button
+              key={cat.id}
+              onClick={() => store.setSelectedCategoryFilter(cat.id)}
+              className={`${styles.categoryItem} ${store.selectedCategoryFilter === cat.id ? styles.activeCategory : ''}`}
+            >
+              <span className={styles.colorDot} style={{ backgroundColor: cat.color || '#a19f9d' }} />
+              <span>{cat.name}</span>
+            </button>
+          ))}
+          {categories.length === 0 && (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-xs)' }}>
+              No categories found. Add one in Settings first.
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Ribbon toolbar panel */}
-      <div className={styles.headerControls}>
-        {/* Filters */}
-        <div className={styles.filters}>
-          <input
-            type="text"
-            placeholder="Search SKU or Name..."
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className={styles.searchInput}
-          />
+      {/* 2. Right Panel: Component sheet main view */}
+      <div className={styles.mainSheet}>
+        {/* Ribbon toolbar panel */}
+        <div className={styles.headerControls}>
+          {/* Filters */}
+          <div className={styles.filters}>
+            <input
+              type="text"
+              placeholder="Search SKU or Name..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className={styles.searchInput}
+            />
 
-          <select
-            value={store.selectedCategoryFilter}
-            onChange={(e) => store.setSelectedCategoryFilter(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="">[All Categories]</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={store.selectedLocationFilter}
-            onChange={(e) => store.setSelectedLocationFilter(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="">[All Locations]</option>
+            <select
+              value={store.selectedLocationFilter}
+              onChange={(e) => store.setSelectedLocationFilter(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="">[All Locations]</option>
             {locations.map((loc: string) => (
               <option key={loc} value={loc}>{loc}</option>
             ))}
@@ -428,7 +442,7 @@ export default function Inventory() {
         <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
           <button
             onClick={() => {
-              setNewItemData(prev => ({ ...prev, categoryId: categories[0]?.id || '' }))
+              setNewItemData(prev => ({ ...prev, categoryId: store.selectedCategoryFilter || categories[0]?.id || '' }))
               setShowAddModal(true)
             }}
             className={styles.filterSelect}
@@ -1107,6 +1121,7 @@ export default function Inventory() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
