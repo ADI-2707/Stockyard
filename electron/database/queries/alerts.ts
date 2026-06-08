@@ -143,6 +143,7 @@ export async function createAlert(itemId: string, type: 'LOW_STOCK' | 'OUT_OF_ST
   }
 
   const alertId = generateId()
+  const timestamp = new Date().toISOString()
   db.insert(alerts)
     .values({
       id: alertId,
@@ -150,7 +151,8 @@ export async function createAlert(itemId: string, type: 'LOW_STOCK' | 'OUT_OF_ST
       type,
       severity,
       message,
-      isActive: 1
+      isActive: 1,
+      triggeredAt: timestamp
     })
     .run()
 
