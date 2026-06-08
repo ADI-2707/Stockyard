@@ -296,6 +296,7 @@ export async function createItem(data: any, performedBy: string) {
         costPerUnit: data.costPerUnit || 0,
         supplier: data.supplier,
         lastMovedAt: initialQty > 0 ? timestamp : null,
+        addedAt: timestamp,
         notes: data.notes
       })
       .run()
