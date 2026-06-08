@@ -207,9 +207,30 @@ export async function getSimpleItemsList() {
     .select({
       id: items.id,
       sku: items.sku,
-      name: items.name
+      name: items.name,
+      quantity: items.quantity,
+      unit: items.unit,
+      threshold: items.threshold,
+      location: items.location,
+      costPerUnit: items.costPerUnit,
+      categoryId: items.categoryId,
+      categoryName: categories.name,
+      categoryColor: categories.color,
+      status: sql<string>`
+        CASE 
+          WHEN ${items.quantity} = 0 THEN 'OUT'
+          WHEN ${items.quantity} <= ${items.threshold} THEN 'LOW'
+          WHEN CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END >= COALESCE(${categories.agingDays}, 90) THEN 'AGING'
+          ELSE 'OK'
+        END
+      `
     })
     .from(items)
+    .leftJoin(categories, eq(items.categoryId, categories.id))
     .where(isNull(items.deletedAt))
     .all()
 }
