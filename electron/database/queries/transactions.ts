@@ -110,3 +110,15 @@ export async function getTransactionsByItemId(itemId: string) {
     .orderBy(desc(transactions.createdAt))
     .all()
 }
+
+export async function getUniqueOperators() {
+  const list = db
+    .select({ performedBy: transactions.performedBy })
+    .from(transactions)
+    .groupBy(transactions.performedBy)
+    .all()
+  return list
+    .map(t => t.performedBy)
+    .filter((op): op is string => !!op && !!op.trim())
+    .sort()
+}

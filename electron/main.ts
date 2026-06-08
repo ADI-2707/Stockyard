@@ -8,7 +8,7 @@ import { runAlertScan } from './services/alertEngine'
 // Import query functions
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from './database/queries/categories'
 import { getAllItems, getFilteredItems, searchItemsAutocomplete, getUniqueLocations, getSimpleItemsList, getItemById, createItem, updateItem, adjustStock, softDeleteItem } from './database/queries/items'
-import { getAllTransactions, getFilteredTransactions, getTransactionsByItemId } from './database/queries/transactions'
+import { getAllTransactions, getFilteredTransactions, getTransactionsByItemId, getUniqueOperators } from './database/queries/transactions'
 import { getActiveAlerts, getResolvedAlerts, acknowledgeAlert, resolveAlert } from './database/queries/alerts'
 import { getAllBOMTemplates, getBOMTemplateDetails, createBOMTemplate, updateBOMTemplate, deleteBOMTemplate, checkBOMCoverage } from './database/queries/bom'
 import { exportCSV } from './services/csvExport'
@@ -141,6 +141,9 @@ ipcMain.handle('transactions:getAll', async () => {
 })
 ipcMain.handle('transactions:getFiltered', async (_, params) => {
   return getFilteredTransactions(params)
+})
+ipcMain.handle('transactions:getOperators', async () => {
+  return getUniqueOperators()
 })
 ipcMain.handle('transactions:getByItem', async (_, itemId) => {
   return getTransactionsByItemId(itemId)

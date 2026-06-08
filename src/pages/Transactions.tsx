@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useInventory } from '../hooks/useInventory.ts'
+import { useInventoryStore } from '../store/inventoryStore.ts'
 import { ipc } from '../lib/ipc.ts'
 import { 
   Download, 
@@ -10,58 +11,32 @@ import inventoryStyles from './Inventory.module.css'
 
 export default function Transactions() {
   const { transactions, loadingTransactions } = useInventory()
+  const store = useInventoryStore()
 
-  // Filter states
-  const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [operatorFilter, setOperatorFilter] = useState('')
+  // Local debounced search query state
+  const [localSearch, setLocalSearch] = useState(store.txSearchTerm)
 
-  // 1. Reactive Filtering
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
-      // Search by SKU or Name
-      if (search) {
-        const query = search.toLowerCase()
-        const matchSku = tx.itemSku?.toLowerCase().includes(query)
-        const matchName = tx.itemName?.toLowerCase().includes(query)
-        if (!matchSku && !matchName) return false
-      }
-
-      // Filter by Type
-      if (typeFilter && tx.type !== typeFilter) {
-        return false
-      }
-
-      // Filter by Operator
-      if (operatorFilter && tx.performedBy !== operatorFilter) {
-        return false
-      }
-
-      return true
-    })
-  }, [transactions, search, typeFilter, operatorFilter])
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 100
-
-  // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1)
-  }, [search, typeFilter, operatorFilter])
+    setLocalSearch(store.txSearchTerm)
+  }, [store.txSearchTerm])
 
-  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE)
-  const paginatedTransactions = useMemo(() => {
-    return filteredTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-  }, [filteredTransactions, currentPage])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== store.txSearchTerm) {
+        store.setTxSearchTerm(localSearch)
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [localSearch])
 
-  // Extract unique operator names for filtering dropdown
-  const operatorsList = useMemo(() => {
-    const opsSet = new Set<string>()
-    transactions.forEach(tx => {
-      if (tx.performedBy) opsSet.add(tx.performedBy)
-    })
-    return Array.from(opsSet).sort()
+  // Pagination bounds from store metadata
+  const totalPages = Math.ceil(store.totalTransactionsCount / store.transactionsLimit)
+  const paginatedTransactions = transactions
+
+  // Fetch unique operator names for filtering dropdown
+  const [operatorsList, setOperatorsList] = useState<string[]>([])
+  useEffect(() => {
+    ipc.transactions.getOperators().then(setOperatorsList)
   }, [transactions])
 
   const formatDateTime = (dateStr: string) => {
@@ -82,25 +57,34 @@ export default function Transactions() {
   // ------------------------------------------------
   const handleExportLedgerCSV = async () => {
     const headers = ['Date/Time', 'SKU Code', 'Component Description', 'Movement Type', 'Quantity Before', 'Quantity Changed', 'Quantity After', 'Operator Name', 'Reference PO/Job', 'Notes']
-    const rows = filteredTransactions.map(tx => {
-      const isAdd = tx.type === 'IN' || tx.type === 'INITIAL'
-      const afterQty = isAdd ? tx.quantityBefore + tx.quantity : tx.quantityBefore - tx.quantity
-      
-      return [
-        formatDateTime(tx.createdAt),
-        tx.itemSku || '',
-        tx.itemName || '',
-        tx.type,
-        tx.quantityBefore,
-        `${isAdd ? '+' : '-'}${tx.quantity}`,
-        afterQty,
-        tx.performedBy,
-        tx.reference || '',
-        tx.notes || ''
-      ]
-    })
-
+    
     try {
+      // Fetch all matching records without paging limit for export
+      const resData = await ipc.transactions.getFiltered({
+        search: store.txSearchTerm,
+        type: store.txTypeFilter,
+        performedBy: store.txOperatorFilter
+      })
+      const allMatchingTransactions = resData.transactions
+
+      const rows = allMatchingTransactions.map((tx: any) => {
+        const isAdd = tx.type === 'IN' || tx.type === 'INITIAL'
+        const afterQty = isAdd ? tx.quantityBefore + tx.quantity : tx.quantityBefore - tx.quantity
+        
+        return [
+          formatDateTime(tx.createdAt),
+          tx.itemSku || '',
+          tx.itemName || '',
+          tx.type,
+          tx.quantityBefore,
+          `${isAdd ? '+' : '-'}${tx.quantity}`,
+          afterQty,
+          tx.performedBy,
+          tx.reference || '',
+          tx.notes || ''
+        ]
+      })
+
       const res = await ipc.csv.export('stockyard_audit_ledger.csv', headers, rows)
       if (res.success) {
         alert(`Ledger audit list saved: ${res.path}`)
@@ -119,15 +103,15 @@ export default function Transactions() {
             <input 
               type="text" 
               placeholder="Search SKU or Name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className={inventoryStyles.searchInput}
             />
           </div>
 
           <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            value={store.txTypeFilter}
+            onChange={(e) => store.setTxTypeFilter(e.target.value)}
             className={inventoryStyles.filterSelect}
           >
             <option value="">[All Movements]</option>
@@ -138,8 +122,8 @@ export default function Transactions() {
           </select>
 
           <select
-            value={operatorFilter}
-            onChange={(e) => setOperatorFilter(e.target.value)}
+            value={store.txOperatorFilter}
+            onChange={(e) => store.setTxOperatorFilter(e.target.value)}
             className={inventoryStyles.filterSelect}
           >
             <option value="">[All Operators]</option>
@@ -148,12 +132,10 @@ export default function Transactions() {
             ))}
           </select>
 
-          {(search || typeFilter || operatorFilter) && (
+          {(store.txSearchTerm || store.txTypeFilter || store.txOperatorFilter) && (
             <button 
               onClick={() => {
-                setSearch('')
-                setTypeFilter('')
-                setOperatorFilter('')
+                store.clearTxFilters()
               }}
               className={inventoryStyles.adjustBtn}
               style={{ width: '28px', height: '28px' }}
@@ -181,7 +163,7 @@ export default function Transactions() {
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
             Loading ledger history...
           </div>
-        ) : filteredTransactions.length === 0 ? (
+        ) : paginatedTransactions.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
             No stock movements match your query filters.
           </div>
@@ -244,28 +226,28 @@ export default function Transactions() {
         )}
 
         {/* Pagination Controls */}
-        {filteredTransactions.length > 0 && (
+        {store.totalTransactionsCount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px var(--spacing-md)', borderTop: '1px solid var(--color-border-grid)', backgroundColor: '#faf9f8' }}>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} of {filteredTransactions.length} transactions
+              Showing {(store.transactionsPage - 1) * store.transactionsLimit + 1} to {Math.min(store.transactionsPage * store.transactionsLimit, store.totalTransactionsCount)} of {store.totalTransactionsCount} transactions
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => store.setTransactionsPage(Math.max(1, store.transactionsPage - 1))}
+                disabled={store.transactionsPage === 1}
                 className={inventoryStyles.actionButton}
-                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                style={{ opacity: store.transactionsPage === 1 ? 0.5 : 1 }}
               >
                 Previous
               </button>
               <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold' }}>
-                Page {currentPage} of {totalPages || 1}
+                Page {store.transactionsPage} of {totalPages || 1}
               </span>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => store.setTransactionsPage(Math.min(totalPages, store.transactionsPage + 1))}
+                disabled={store.transactionsPage === totalPages || totalPages === 0}
                 className={inventoryStyles.actionButton}
-                style={{ opacity: currentPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
+                style={{ opacity: store.transactionsPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
               >
                 Next
               </button>

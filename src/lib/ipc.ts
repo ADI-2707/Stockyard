@@ -60,6 +60,7 @@ export const ipc = {
       limit?: number
       offset?: number
     }) => window.electron.invoke('transactions:getFiltered', params),
+    getOperators: () => window.electron.invoke('transactions:getOperators'),
     getByItem: (itemId: string) => window.electron.invoke('transactions:getByItem', itemId)
   },
 

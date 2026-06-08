@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useInventory } from '../hooks/useInventory.ts'
 import { useInventoryStore } from '../store/inventoryStore.ts'
 import { ipc } from '../lib/ipc.ts'
@@ -61,19 +61,25 @@ export default function Inventory() {
   // CSV Import state
   const [importing, setImporting] = useState(false)
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 100
+  // Local debounced search query state
+  const [localSearch, setLocalSearch] = useState(store.searchTerm)
 
-  // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1)
-  }, [store.searchTerm, store.selectedCategoryFilter, store.selectedLocationFilter, store.selectedStatusFilter])
+    setLocalSearch(store.searchTerm)
+  }, [store.searchTerm])
 
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE)
-  const paginatedItems = useMemo(() => {
-    return items.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-  }, [items, currentPage])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== store.searchTerm) {
+        store.setSearchTerm(localSearch)
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [localSearch])
+
+  // Pagination bounds from store metadata
+  const totalPages = Math.ceil(store.totalItemsCount / store.itemsLimit)
+  const paginatedItems = items
 
   // ------------------------------------------------
   // CSV Import / Export Actions
@@ -369,8 +375,8 @@ export default function Inventory() {
           <input
             type="text"
             placeholder="Search SKU or Name..."
-            value={store.searchTerm}
-            onChange={(e) => store.setSearchTerm(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             className={styles.searchInput}
           />
 
@@ -570,28 +576,28 @@ export default function Inventory() {
         )}
 
         {/* Pagination Controls */}
-        {items.length > 0 && (
+        {store.totalItemsCount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px var(--spacing-md)', borderTop: '1px solid var(--color-border-grid)', backgroundColor: '#faf9f8' }}>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, items.length)} of {items.length} items
+              Showing {(store.itemsPage - 1) * store.itemsLimit + 1} to {Math.min(store.itemsPage * store.itemsLimit, store.totalItemsCount)} of {store.totalItemsCount} items
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => store.setItemsPage(Math.max(1, store.itemsPage - 1))}
+                disabled={store.itemsPage === 1}
                 className={styles.actionButton}
-                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                style={{ opacity: store.itemsPage === 1 ? 0.5 : 1 }}
               >
                 Previous
               </button>
               <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold' }}>
-                Page {currentPage} of {totalPages || 1}
+                Page {store.itemsPage} of {totalPages || 1}
               </span>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => store.setItemsPage(Math.min(totalPages, store.itemsPage + 1))}
+                disabled={store.itemsPage === totalPages || totalPages === 0}
                 className={styles.actionButton}
-                style={{ opacity: currentPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
+                style={{ opacity: store.itemsPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
               >
                 Next
               </button>
