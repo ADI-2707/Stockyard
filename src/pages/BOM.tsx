@@ -48,6 +48,23 @@ export default function BOM() {
   const [selectedItemToAdd, setSelectedItemToAdd] = useState('')
   const [qtyToAdd, setQtyToAdd] = useState(1)
 
+  // Autocomplete state for item lookup
+  const [searchQuery, setSearchQuery] = useState('')
+  const [autocompleteResults, setAutocompleteResults] = useState<any[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Debounced search logic for autocomplete
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setAutocompleteResults([])
+      return
+    }
+    const timer = setTimeout(() => {
+      ipc.items.searchAutocomplete(searchQuery).then(setAutocompleteResults)
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   // ------------------------------------------------
   // Initial Load & Selections
   // ------------------------------------------------
@@ -111,6 +128,8 @@ export default function BOM() {
     }
     
     setQtyToAdd(1)
+    setSearchQuery('')
+    setSelectedItemToAdd('')
   }
 
   const removeComponentFromBOMForm = (itemId: string) => {
@@ -147,6 +166,8 @@ export default function BOM() {
     setBomName(selectedBom.name)
     setBomDescription(selectedBom.description || '')
     setBomItemsList(selectedBom.items.map((i: any) => ({ itemId: i.itemId, quantity: i.quantityRequired })))
+    setSearchQuery('')
+    setSelectedItemToAdd('')
     setShowEditModal(true)
   }
 
@@ -253,6 +274,8 @@ export default function BOM() {
               setBomName('')
               setBomDescription('')
               setBomItemsList([])
+              setSearchQuery('')
+              setSelectedItemToAdd('')
               setShowAddModal(true)
             }}
             className={inventoryStyles.adjustBtn}
@@ -464,16 +487,63 @@ export default function BOM() {
                 <div style={{ border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: 'var(--border-radius-sm)', backgroundColor: '#faf9f8' }}>
                   <h4 style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'bold', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Configure Template Ingredients</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', alignItems: 'center' }}>
-                    <select
-                      value={selectedItemToAdd}
-                      onChange={(e) => setSelectedItemToAdd(e.target.value)}
-                      className={inventoryStyles.formInput}
-                    >
-                      <option value="">-- Choose Component SKU --</option>
-                      {allItems.map(i => (
-                        <option key={i.id} value={i.id}>{i.sku} - {i.name}</option>
-                      ))}
-                    </select>
+                    
+                    {/* Autocomplete Input Search */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value)
+                          setShowSuggestions(true)
+                          if (selectedItemToAdd) setSelectedItemToAdd('')
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        placeholder="Type to search SKU or Name..."
+                        className={inventoryStyles.formInput}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                      {showSuggestions && autocompleteResults.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          zIndex: 1000,
+                          backgroundColor: '#fff',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: 'var(--border-radius-sm)',
+                          maxHeight: '180px',
+                          overflowY: 'auto',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          marginTop: '2px'
+                        }}>
+                          {autocompleteResults.map(item => (
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                setSelectedItemToAdd(item.id)
+                                setSearchQuery(`${item.sku} - ${item.name}`)
+                                setShowSuggestions(false)
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f2f2f2',
+                                fontSize: 'var(--font-size-sm)',
+                                color: 'var(--color-text-primary)',
+                                textAlign: 'left'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f2f1'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                            >
+                              <span style={{ fontWeight: 'bold' }}>{item.sku}</span> - {item.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     
                     <input 
                       type="number" 
@@ -575,16 +645,63 @@ export default function BOM() {
                 <div style={{ border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: 'var(--border-radius-sm)', backgroundColor: '#faf9f8' }}>
                   <h4 style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'bold', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Add Component SKU</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', alignItems: 'center' }}>
-                    <select
-                      value={selectedItemToAdd}
-                      onChange={(e) => setSelectedItemToAdd(e.target.value)}
-                      className={inventoryStyles.formInput}
-                    >
-                      <option value="">-- Choose Component SKU --</option>
-                      {allItems.map(i => (
-                        <option key={i.id} value={i.id}>{i.sku} - {i.name}</option>
-                      ))}
-                    </select>
+                    
+                    {/* Autocomplete Input Search */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value)
+                          setShowSuggestions(true)
+                          if (selectedItemToAdd) setSelectedItemToAdd('')
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        placeholder="Type to search SKU or Name..."
+                        className={inventoryStyles.formInput}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                      {showSuggestions && autocompleteResults.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          zIndex: 1000,
+                          backgroundColor: '#fff',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: 'var(--border-radius-sm)',
+                          maxHeight: '180px',
+                          overflowY: 'auto',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          marginTop: '2px'
+                        }}>
+                          {autocompleteResults.map(item => (
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                setSelectedItemToAdd(item.id)
+                                setSearchQuery(`${item.sku} - ${item.name}`)
+                                setShowSuggestions(false)
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f2f2f2',
+                                fontSize: 'var(--font-size-sm)',
+                                color: 'var(--color-text-primary)',
+                                textAlign: 'left'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f2f1'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                            >
+                              <span style={{ fontWeight: 'bold' }}>{item.sku}</span> - {item.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     
                     <input 
                       type="number" 
