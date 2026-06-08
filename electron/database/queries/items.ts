@@ -189,6 +189,31 @@ export async function searchItemsAutocomplete(search: string) {
     .all()
 }
 
+export async function getUniqueLocations() {
+  const list = db
+    .select({ location: items.location })
+    .from(items)
+    .where(isNull(items.deletedAt))
+    .groupBy(items.location)
+    .all()
+  return list
+    .map(l => l.location)
+    .filter((loc): loc is string => !!loc && !!loc.trim())
+    .sort()
+}
+
+export async function getSimpleItemsList() {
+  return db
+    .select({
+      id: items.id,
+      sku: items.sku,
+      name: items.name
+    })
+    .from(items)
+    .where(isNull(items.deletedAt))
+    .all()
+}
+
 // Standard UUID/ID generator for SQLite records
 function generateId() {
   return crypto.randomUUID()

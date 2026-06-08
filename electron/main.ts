@@ -7,7 +7,7 @@ import { runAlertScan } from './services/alertEngine'
 
 // Import query functions
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from './database/queries/categories'
-import { getAllItems, getFilteredItems, searchItemsAutocomplete, getItemById, createItem, updateItem, adjustStock, softDeleteItem } from './database/queries/items'
+import { getAllItems, getFilteredItems, searchItemsAutocomplete, getUniqueLocations, getSimpleItemsList, getItemById, createItem, updateItem, adjustStock, softDeleteItem } from './database/queries/items'
 import { getAllTransactions, getFilteredTransactions, getTransactionsByItemId } from './database/queries/transactions'
 import { getActiveAlerts, getResolvedAlerts, acknowledgeAlert, resolveAlert } from './database/queries/alerts'
 import { getAllBOMTemplates, getBOMTemplateDetails, createBOMTemplate, updateBOMTemplate, deleteBOMTemplate, checkBOMCoverage } from './database/queries/bom'
@@ -101,6 +101,12 @@ ipcMain.handle('items:getFiltered', async (_, params) => {
 })
 ipcMain.handle('items:searchAutocomplete', async (_, search) => {
   return searchItemsAutocomplete(search)
+})
+ipcMain.handle('items:getLocations', async () => {
+  return getUniqueLocations()
+})
+ipcMain.handle('items:getSimpleList', async () => {
+  return getSimpleItemsList()
 })
 ipcMain.handle('items:getById', async (_, id) => {
   return getItemById(id)

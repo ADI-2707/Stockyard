@@ -391,7 +391,7 @@ export default function Inventory() {
             className={styles.filterSelect}
           >
             <option value="">[All Locations]</option>
-            {locations.map(loc => (
+            {locations.map((loc: string) => (
               <option key={loc} value={loc}>{loc}</option>
             ))}
           </select>

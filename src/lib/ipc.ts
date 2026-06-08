@@ -32,6 +32,8 @@ export const ipc = {
       offset?: number
     }) => window.electron.invoke('items:getFiltered', params),
     searchAutocomplete: (search: string) => window.electron.invoke('items:searchAutocomplete', search),
+    getLocations: () => window.electron.invoke('items:getLocations'),
+    getSimpleList: () => window.electron.invoke('items:getSimpleList'),
     getById: (id: string) => window.electron.invoke('items:getById', id),
     create: (data: any, performedBy: string) => 
       window.electron.invoke('items:create', { data, performedBy }),
