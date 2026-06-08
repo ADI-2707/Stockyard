@@ -14,6 +14,7 @@ interface InventoryState {
   fetchCategories: () => Promise<void>
   fetchTransactions: () => Promise<void>
   fetchLocations: () => Promise<void>
+  subscribeToInventoryUpdates: () => () => void
 
   // Searching & Filtering Items Grid States
   searchTerm: string
@@ -131,6 +132,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     }
   },
 
+  subscribeToInventoryUpdates: () => {
+    const unsubscribe = window.electron.on('alerts:updated', () => {
+      console.log('Main process pushed updates. Refreshing inventory stores...')
+      get().fetchItems()
+      get().fetchLocations()
+    })
+    return unsubscribe
+  },
+
   // Items Filters State management
   searchTerm: '',
   setSearchTerm: (term) => {
@@ -139,7 +149,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
   selectedCategoryFilter: '',
   setSelectedCategoryFilter: (categoryId) => {
-    set({ selectedCategoryFilter: categoryId, itemsPage: 1 })
+    set({ 
+      selectedCategoryFilter: categoryId, 
+      itemsPage: 1,
+      searchTerm: '',
+      selectedStatusFilter: '',
+      selectedLocationFilter: ''
+    })
     get().fetchItems()
   },
   selectedStatusFilter: '',

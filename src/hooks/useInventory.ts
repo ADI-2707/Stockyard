@@ -14,7 +14,8 @@ export function useInventory() {
     fetchItems,
     fetchCategories,
     fetchTransactions,
-    fetchLocations
+    fetchLocations,
+    subscribeToInventoryUpdates
   } = useInventoryStore()
 
   const [simpleItems, setSimpleItems] = useState<any[]>([])
@@ -38,6 +39,11 @@ export function useInventory() {
     fetchTransactions()
     fetchLocations()
     fetchSimpleItems()
+
+    const unsubscribe = subscribeToInventoryUpdates()
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   const refresh = () => {
