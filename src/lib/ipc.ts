@@ -23,6 +23,15 @@ export const ipc = {
   // Items (Components)
   items: {
     getAll: () => window.electron.invoke('items:getAll'),
+    getFiltered: (params: {
+      search?: string
+      categoryId?: string
+      location?: string
+      status?: string
+      limit?: number
+      offset?: number
+    }) => window.electron.invoke('items:getFiltered', params),
+    searchAutocomplete: (search: string) => window.electron.invoke('items:searchAutocomplete', search),
     getById: (id: string) => window.electron.invoke('items:getById', id),
     create: (data: any, performedBy: string) => 
       window.electron.invoke('items:create', { data, performedBy }),
@@ -42,6 +51,13 @@ export const ipc = {
   // Transactions
   transactions: {
     getAll: () => window.electron.invoke('transactions:getAll'),
+    getFiltered: (params: {
+      search?: string
+      type?: string
+      performedBy?: string
+      limit?: number
+      offset?: number
+    }) => window.electron.invoke('transactions:getFiltered', params),
     getByItem: (itemId: string) => window.electron.invoke('transactions:getByItem', itemId)
   },
 
