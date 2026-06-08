@@ -7,8 +7,8 @@ import { runAlertScan } from './services/alertEngine'
 
 // Import query functions
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from './database/queries/categories'
-import { getAllItems, getItemById, createItem, updateItem, adjustStock, softDeleteItem } from './database/queries/items'
-import { getAllTransactions, getTransactionsByItemId } from './database/queries/transactions'
+import { getAllItems, getFilteredItems, searchItemsAutocomplete, getUniqueLocations, getSimpleItemsList, getItemById, createItem, updateItem, adjustStock, softDeleteItem } from './database/queries/items'
+import { getAllTransactions, getFilteredTransactions, getTransactionsByItemId, getUniqueOperators } from './database/queries/transactions'
 import { getActiveAlerts, getResolvedAlerts, acknowledgeAlert, resolveAlert } from './database/queries/alerts'
 import { getAllBOMTemplates, getBOMTemplateDetails, createBOMTemplate, updateBOMTemplate, deleteBOMTemplate, checkBOMCoverage } from './database/queries/bom'
 import { exportCSV } from './services/csvExport'
@@ -96,6 +96,18 @@ ipcMain.handle('categories:delete', async (_, id) => {
 ipcMain.handle('items:getAll', async () => {
   return getAllItems()
 })
+ipcMain.handle('items:getFiltered', async (_, params) => {
+  return getFilteredItems(params)
+})
+ipcMain.handle('items:searchAutocomplete', async (_, search) => {
+  return searchItemsAutocomplete(search)
+})
+ipcMain.handle('items:getLocations', async () => {
+  return getUniqueLocations()
+})
+ipcMain.handle('items:getSimpleList', async () => {
+  return getSimpleItemsList()
+})
 ipcMain.handle('items:getById', async (_, id) => {
   return getItemById(id)
 })
@@ -126,6 +138,12 @@ ipcMain.handle('items:delete', async (_, id) => {
 // --- Transactions (Audit Trail) ---
 ipcMain.handle('transactions:getAll', async () => {
   return getAllTransactions()
+})
+ipcMain.handle('transactions:getFiltered', async (_, params) => {
+  return getFilteredTransactions(params)
+})
+ipcMain.handle('transactions:getOperators', async () => {
+  return getUniqueOperators()
 })
 ipcMain.handle('transactions:getByItem', async (_, itemId) => {
   return getTransactionsByItemId(itemId)

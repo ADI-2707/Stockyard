@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, primaryKey, index } from 'drizzle-orm/sqlite-core'
 
 export const categories = sqliteTable('categories', {
   id: text('id').primaryKey(),
@@ -23,7 +23,12 @@ export const items = sqliteTable('items', {
   addedAt: text('added_at').default('CURRENT_TIMESTAMP'),
   notes: text('notes'),
   deletedAt: text('deleted_at') // ISO string timestamp for soft delete
-})
+}, (table) => ({
+  nameIdx: index('items_name_idx').on(table.name),
+  catIdx: index('items_category_idx').on(table.categoryId),
+  locIdx: index('items_location_idx').on(table.location),
+  delIdx: index('items_deleted_at_idx').on(table.deletedAt)
+}))
 
 export const transactions = sqliteTable('transactions', {
   id: text('id').primaryKey(),
@@ -35,7 +40,10 @@ export const transactions = sqliteTable('transactions', {
   reference: text('reference'), // PO # or build name reference
   notes: text('notes'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP')
-})
+}, (table) => ({
+  itemIdx: index('transactions_item_idx').on(table.itemId),
+  createdIdx: index('transactions_created_at_idx').on(table.createdAt)
+}))
 
 export const alerts = sqliteTable('alerts', {
   id: text('id').primaryKey(),

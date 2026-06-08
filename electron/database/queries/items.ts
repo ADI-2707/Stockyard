@@ -1,6 +1,218 @@
 import { db } from '../connection'
 import { items, categories, transactions } from '../schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, or, sql } from 'drizzle-orm'
+
+export async function getFilteredItems(params: {
+  search?: string
+  categoryId?: string
+  location?: string
+  status?: string
+  limit?: number
+  offset?: number
+}) {
+  const { search, categoryId, location, status, limit = 100, offset = 0 } = params
+
+  // 1. Base query with joins
+  let baseQuery = db
+    .select({
+      id: items.id,
+      name: items.name,
+      sku: items.sku,
+      categoryId: items.categoryId,
+      categoryName: categories.name,
+      categoryColor: categories.color,
+      quantity: items.quantity,
+      unit: items.unit,
+      threshold: items.threshold,
+      maxStock: items.maxStock,
+      location: items.location,
+      costPerUnit: items.costPerUnit,
+      supplier: items.supplier,
+      lastMovedAt: items.lastMovedAt,
+      addedAt: items.addedAt,
+      notes: items.notes,
+      daysUnmoved: sql<number>`
+        CASE 
+          WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+          THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+          ELSE 0 
+        END
+      `,
+      agingDaysLimit: sql<number>`COALESCE(${categories.agingDays}, 90)`,
+      status: sql<string>`
+        CASE 
+          WHEN ${items.quantity} = 0 THEN 'OUT'
+          WHEN ${items.quantity} <= ${items.threshold} THEN 'LOW'
+          WHEN CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END >= COALESCE(${categories.agingDays}, 90) THEN 'AGING'
+          ELSE 'OK'
+        END
+      `
+    })
+    .from(items)
+    .leftJoin(categories, eq(items.categoryId, categories.id))
+    .$dynamic()
+
+  // 2. Build where conditions
+  const conditions = [isNull(items.deletedAt)]
+
+  if (search) {
+    const searchPattern = `%${search.toLowerCase()}%`
+    conditions.push(
+      or(
+        sql`lower(${items.sku}) LIKE ${searchPattern}`,
+        sql`lower(${items.name}) LIKE ${searchPattern}`
+      )!
+    )
+  }
+
+  if (categoryId) {
+    conditions.push(eq(items.categoryId, categoryId))
+  }
+
+  if (location) {
+    conditions.push(eq(items.location, location))
+  }
+
+  let whereQuery = baseQuery.where(and(...conditions))
+
+  // Filter by calculated status at database level
+  if (status) {
+    if (status === 'OUT') {
+      whereQuery = whereQuery.where(eq(items.quantity, 0))
+    } else if (status === 'LOW') {
+      whereQuery = whereQuery.where(
+        and(
+          sql`${items.quantity} > 0`,
+          sql`${items.quantity} <= ${items.threshold}`
+        )
+      )
+    } else if (status === 'AGING') {
+      whereQuery = whereQuery.where(
+        and(
+          sql`${items.quantity} > 0`,
+          sql`CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END >= COALESCE(${categories.agingDays}, 90)`
+        )
+      )
+    } else if (status === 'OK') {
+      whereQuery = whereQuery.where(
+        and(
+          sql`${items.quantity} > ${items.threshold}`,
+          sql`CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END < COALESCE(${categories.agingDays}, 90)`
+        )
+      )
+    }
+  }
+
+  // Get total count for pagination controls
+  let countQuery = db
+    .select({ count: sql<number>`count(*)` })
+    .from(items)
+    .leftJoin(categories, eq(items.categoryId, categories.id))
+    .where(and(...conditions))
+    .$dynamic()
+
+  if (status) {
+    if (status === 'OUT') {
+      countQuery = countQuery.where(eq(items.quantity, 0))
+    } else if (status === 'LOW') {
+      countQuery = countQuery.where(
+        and(
+          sql`${items.quantity} > 0`,
+          sql`${items.quantity} <= ${items.threshold}`
+        )
+      )
+    } else if (status === 'AGING') {
+      countQuery = countQuery.where(
+        and(
+          sql`${items.quantity} > 0`,
+          sql`CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END >= COALESCE(${categories.agingDays}, 90)`
+        )
+      )
+    } else if (status === 'OK') {
+      countQuery = countQuery.where(
+        and(
+          sql`${items.quantity} > ${items.threshold}`,
+          sql`CASE 
+            WHEN julianday('now') > julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) 
+            THEN CAST(julianday('now') - julianday(COALESCE(${items.lastMovedAt}, ${items.addedAt})) AS INTEGER)
+            ELSE 0 
+          END < COALESCE(${categories.agingDays}, 90)`
+        )
+      )
+    }
+  }
+
+  const [{ count }] = countQuery.all()
+  const data = whereQuery.limit(limit).offset(offset).all()
+
+  return {
+    items: data,
+    totalCount: count
+  }
+}
+
+export async function searchItemsAutocomplete(search: string) {
+  const searchPattern = `%${search.toLowerCase()}%`
+  return db
+    .select({
+      id: items.id,
+      sku: items.sku,
+      name: items.name
+    })
+    .from(items)
+    .where(
+      and(
+        isNull(items.deletedAt),
+        or(
+          sql`lower(${items.sku}) LIKE ${searchPattern}`,
+          sql`lower(${items.name}) LIKE ${searchPattern}`
+        )
+      )
+    )
+    .limit(25)
+    .all()
+}
+
+export async function getUniqueLocations() {
+  const list = db
+    .select({ location: items.location })
+    .from(items)
+    .where(isNull(items.deletedAt))
+    .groupBy(items.location)
+    .all()
+  return list
+    .map(l => l.location)
+    .filter((loc): loc is string => !!loc && !!loc.trim())
+    .sort()
+}
+
+export async function getSimpleItemsList() {
+  return db
+    .select({
+      id: items.id,
+      sku: items.sku,
+      name: items.name
+    })
+    .from(items)
+    .where(isNull(items.deletedAt))
+    .all()
+}
 
 // Standard UUID/ID generator for SQLite records
 function generateId() {
