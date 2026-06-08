@@ -84,6 +84,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     try {
       const list = await ipc.categories.getAll()
       set({ categories: list, loadingCategories: false })
+      if (list.length > 0 && !get().selectedCategoryFilter) {
+        set({ selectedCategoryFilter: list[0].id })
+        get().fetchItems()
+      }
     } catch (error) {
       console.error('Failed to fetch categories:', error)
       set({ loadingCategories: false })
@@ -156,9 +160,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   itemsLimit: 100,
   totalItemsCount: 0,
   clearFilters: () => {
+    const { categories } = get()
     set({
       searchTerm: '',
-      selectedCategoryFilter: '',
+      selectedCategoryFilter: categories[0]?.id || '',
       selectedStatusFilter: '',
       selectedLocationFilter: '',
       itemsPage: 1
