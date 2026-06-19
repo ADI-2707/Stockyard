@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useInventory } from '../hooks/useInventory.ts'
+import { useScanner } from '../hooks/useScanner.ts'
 import { useInventoryStore } from '../store/inventoryStore.ts'
 import { ipc } from '../lib/ipc.ts'
 import {
@@ -275,6 +276,16 @@ export default function Inventory() {
     }
   }
 
+  useScanner((scannedSku) => {
+    const existingItem = items.find((i: any) => i.sku.toLowerCase() === scannedSku.toLowerCase())
+    if (existingItem) {
+      openDetails(existingItem)
+    } else {
+      setNewItemData(prev => ({ ...prev, sku: scannedSku, categoryId: store.selectedCategoryFilter || categories[0]?.id || '' }))
+      setShowAddModal(true)
+    }
+  })
+
   // ------------------------------------------------
   // Add / Edit Form Actions
   // ------------------------------------------------
@@ -411,445 +422,249 @@ export default function Inventory() {
               className={styles.filterSelect}
             >
               <option value="">[All Locations]</option>
-            {locations.map((loc: string) => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
+              {locations.map((loc: string) => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
 
-          <select
-            value={store.selectedStatusFilter}
-            onChange={(e) => store.setSelectedStatusFilter(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="">[All Alert Statuses]</option>
-            <option value="OK">Healthy (OK)</option>
-            <option value="LOW">Low Stock</option>
-            <option value="OUT">Out of Stock</option>
-            <option value="AGING">Aging Components</option>
-          </select>
+            <select
+              value={store.selectedStatusFilter}
+              onChange={(e) => store.setSelectedStatusFilter(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="">[All Alert Statuses]</option>
+              <option value="OK">Healthy (OK)</option>
+              <option value="LOW">Low Stock</option>
+              <option value="OUT">Out of Stock</option>
+              <option value="AGING">Aging Components</option>
+            </select>
 
-          <button
-            onClick={store.clearFilters}
-            className={styles.adjustBtn}
-            style={{ width: '28px', height: '28px' }}
-            title="Clear all filters"
-          >
-            <FilterX size={14} />
-          </button>
+            <button
+              onClick={store.clearFilters}
+              className={styles.adjustBtn}
+              style={{ width: '28px', height: '28px' }}
+              title="Clear all filters"
+            >
+              <FilterX size={14} />
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+            <button
+              onClick={() => {
+                setNewItemData(prev => ({ ...prev, categoryId: store.selectedCategoryFilter || categories[0]?.id || '' }))
+                setShowAddModal(true)
+              }}
+              className={styles.filterSelect}
+              style={{ backgroundColor: 'var(--color-brand-primary)', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
+            >
+              <Plus size={14} /> New Component
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className={styles.filterSelect}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Download size={14} /> Export CSV
+            </button>
+
+            <label
+              className={styles.filterSelect}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, justifyContent: 'center' }}
+            >
+              <Upload size={14} /> {importing ? 'Importing...' : 'Import CSV'}
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportCSV}
+                style={{ display: 'none' }}
+                disabled={importing}
+              />
+            </label>
+          </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-          <button
-            onClick={() => {
-              setNewItemData(prev => ({ ...prev, categoryId: store.selectedCategoryFilter || categories[0]?.id || '' }))
-              setShowAddModal(true)
-            }}
-            className={styles.filterSelect}
-            style={{ backgroundColor: 'var(--color-brand-primary)', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
-          >
-            <Plus size={14} /> New Component
-          </button>
+        {/* Spreadsheet Grid Table */}
+        <div className={styles.tableContainer}>
+          {loading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+              Loading component spreadsheet...
+            </div>
+          ) : items.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+              No components match your query. Click "New Component" to add items manually.
+            </div>
+          ) : (
+            <table className={styles.gridTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: '100px' }}>SKU</th>
+                  <th>Component Description</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th style={{ textAlign: 'right' }}>Cost per Unit</th>
+                  <th style={{ textAlign: 'right', width: '140px' }}>In Stock</th>
+                  <th style={{ textAlign: 'right' }}>Min Threshold</th>
+                  <th style={{ textAlign: 'right' }}>Max Stock</th>
+                  <th>Supplier</th>
+                  <th style={{ width: '80px', textAlign: 'center' }}>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.map((item) => {
+                  let rowClass = styles.rowNormal
+                  let badgeClass = styles.badgeOk
+                  let badgeText = 'OK'
 
-          <button
-            onClick={handleExportCSV}
-            className={styles.filterSelect}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Download size={14} /> Export CSV
-          </button>
+                  if (item.status === 'OUT') {
+                    rowClass = styles.rowOutOfStock
+                    badgeClass = styles.badgeOut
+                    badgeText = 'OUT'
+                  } else if (item.status === 'LOW') {
+                    rowClass = styles.rowLowStock
+                    badgeClass = styles.badgeLow
+                    badgeText = 'LOW'
+                  } else if (item.status === 'AGING') {
+                    rowClass = styles.rowAging
+                    badgeClass = styles.badgeAging
+                    badgeText = `AGING (${item.daysUnmoved}d)`
+                  }
 
-          <label
-            className={styles.filterSelect}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, justifyContent: 'center' }}
-          >
-            <Upload size={14} /> {importing ? 'Importing...' : 'Import CSV'}
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleImportCSV}
-              style={{ display: 'none' }}
-              disabled={importing}
-            />
-          </label>
-        </div>
-      </div>
+                  return (
+                    <tr key={item.id} className={rowClass}>
+                      <td style={{ fontWeight: 'bold' }}>{item.sku}</td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span>{item.name}</span>
+                          {item.status !== 'OK' && (
+                            <span className={badgeClass} style={{ fontSize: '9px', padding: '1px 4px' }}>
+                              {badgeText}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <span
+                            className={styles.colorDot}
+                            style={{ backgroundColor: item.categoryColor || '#a19f9d', margin: 0 }}
+                          />
+                          {item.categoryName || 'Uncategorized'}
+                        </span>
+                      </td>
+                      <td>{item.location || '-'}</td>
+                      <td style={{ textAlign: 'right' }}>{formatCurrency(item.costPerUnit)}</td>
 
-      {/* Spreadsheet Grid Table */}
-      <div className={styles.tableContainer}>
-        {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-            Loading component spreadsheet...
-          </div>
-        ) : items.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-            No components match your query. Click "New Component" to add items manually.
-          </div>
-        ) : (
-          <table className={styles.gridTable}>
-            <thead>
-              <tr>
-                <th style={{ width: '100px' }}>SKU</th>
-                <th>Component Description</th>
-                <th>Category</th>
-                <th>Location</th>
-                <th style={{ textAlign: 'right' }}>Cost per Unit</th>
-                <th style={{ textAlign: 'right', width: '140px' }}>In Stock</th>
-                <th style={{ textAlign: 'right' }}>Min Threshold</th>
-                <th style={{ textAlign: 'right' }}>Max Stock</th>
-                <th>Supplier</th>
-                <th style={{ width: '80px', textAlign: 'center' }}>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedItems.map((item) => {
-                let rowClass = styles.rowNormal
-                let badgeClass = styles.badgeOk
-                let badgeText = 'OK'
+                      {/* Inline stock adjust */}
+                      <td>
+                        <div className={styles.inlineAdjust}>
+                          <button
+                            onClick={() => handleInlineAdjust(item.id, -1)}
+                            className={styles.adjustBtn}
+                            disabled={item.quantity <= 0}
+                            title="Decrease stock by 1"
+                          >
+                            -
+                          </button>
+                          <span className={styles.qtyValue}>{item.quantity}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginRight: '6px' }}>{item.unit}</span>
+                          <button
+                            onClick={() => handleInlineAdjust(item.id, 1)}
+                            className={styles.adjustBtn}
+                            title="Increase stock by 1"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
 
-                if (item.status === 'OUT') {
-                  rowClass = styles.rowOutOfStock
-                  badgeClass = styles.badgeOut
-                  badgeText = 'OUT'
-                } else if (item.status === 'LOW') {
-                  rowClass = styles.rowLowStock
-                  badgeClass = styles.badgeLow
-                  badgeText = 'LOW'
-                } else if (item.status === 'AGING') {
-                  rowClass = styles.rowAging
-                  badgeClass = styles.badgeAging
-                  badgeText = `AGING (${item.daysUnmoved}d)`
-                }
+                      <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{item.threshold}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{item.maxStock || '-'}</td>
+                      <td style={{ color: 'var(--color-text-secondary)' }}>{item.supplier || '-'}</td>
 
-                return (
-                  <tr key={item.id} className={rowClass}>
-                    <td style={{ fontWeight: 'bold' }}>{item.sku}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span>{item.name}</span>
-                        {item.status !== 'OK' && (
-                          <span className={badgeClass} style={{ fontSize: '9px', padding: '1px 4px' }}>
-                            {badgeText}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span
-                          className={styles.colorDot}
-                          style={{ backgroundColor: item.categoryColor || '#a19f9d', margin: 0 }}
-                        />
-                        {item.categoryName || 'Uncategorized'}
-                      </span>
-                    </td>
-                    <td>{item.location || '-'}</td>
-                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.costPerUnit)}</td>
-
-                    {/* Inline stock adjust */}
-                    <td>
-                      <div className={styles.inlineAdjust}>
+                      <td style={{ textAlign: 'center' }}>
                         <button
-                          onClick={() => handleInlineAdjust(item.id, -1)}
-                          className={styles.adjustBtn}
-                          disabled={item.quantity <= 0}
-                          title="Decrease stock by 1"
+                          onClick={() => openDetails(item)}
+                          className={styles.textButton}
+                          style={{ fontSize: '11px' }}
                         >
-                          -
+                          Inspect
                         </button>
-                        <span className={styles.qtyValue}>{item.quantity}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginRight: '6px' }}>{item.unit}</span>
-                        <button
-                          onClick={() => handleInlineAdjust(item.id, 1)}
-                          className={styles.adjustBtn}
-                          title="Increase stock by 1"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
 
-                    <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{item.threshold}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{item.maxStock || '-'}</td>
-                    <td style={{ color: 'var(--color-text-secondary)' }}>{item.supplier || '-'}</td>
-
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        onClick={() => openDetails(item)}
-                        className={styles.textButton}
-                        style={{ fontSize: '11px' }}
-                      >
-                        Inspect
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-
-        {/* Pagination Controls */}
-        {store.totalItemsCount > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px var(--spacing-md)', borderTop: '1px solid var(--color-border-grid)', backgroundColor: '#faf9f8' }}>
-            <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-              Showing {(store.itemsPage - 1) * store.itemsLimit + 1} to {Math.min(store.itemsPage * store.itemsLimit, store.totalItemsCount)} of {store.totalItemsCount} items
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => store.setItemsPage(Math.max(1, store.itemsPage - 1))}
-                disabled={store.itemsPage === 1}
-                className={styles.actionButton}
-                style={{ opacity: store.itemsPage === 1 ? 0.5 : 1 }}
-              >
-                Previous
-              </button>
-              <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold' }}>
-                Page {store.itemsPage} of {totalPages || 1}
-              </span>
-              <button
-                onClick={() => store.setItemsPage(Math.min(totalPages, store.itemsPage + 1))}
-                disabled={store.itemsPage === totalPages || totalPages === 0}
-                className={styles.actionButton}
-                style={{ opacity: store.itemsPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ------------------------------------------------ */}
-      {/* 1. Modal: Add Component Form */}
-      {/* ------------------------------------------------ */}
-      {showAddModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>Create New Component SKU</h3>
-              <button onClick={() => setShowAddModal(false)} className={styles.adjustBtn}>
-                <X size={14} />
-              </button>
-            </div>
-            <form onSubmit={handleAddItem}>
-              <div className={styles.modalBody}>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>SKU / Part Code *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newItemData.sku}
-                      onChange={(e) => setNewItemData({ ...newItemData, sku: e.target.value })}
-                      placeholder="e.g. REL-24V-01"
-                      className={styles.formInput}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Component Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newItemData.name}
-                      onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })}
-                      placeholder="e.g. Schneider Relays 24V"
-                      className={styles.formInput}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Category *</label>
-                    <select
-                      required
-                      value={newItemData.categoryId}
-                      onChange={(e) => setNewItemData({ ...newItemData, categoryId: e.target.value })}
-                      className={styles.formInput}
-                    >
-                      <option value="">-- Select Category --</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Storage Location</label>
-                    <input
-                      type="text"
-                      value={newItemData.location}
-                      onChange={(e) => setNewItemData({ ...newItemData, location: e.target.value })}
-                      placeholder="Shelf A-1 / Row 2"
-                      className={styles.formInput}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Initial Stock Quantity</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newItemData.quantity}
-                      onChange={(e) => setNewItemData({ ...newItemData, quantity: parseInt(e.target.value) || 0 })}
-                      className={styles.formInput}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Measurement Unit (pcs/meters)</label>
-                    <input
-                      type="text"
-                      value={newItemData.unit}
-                      onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
-                      placeholder="pcs"
-                      className={styles.formInput}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Cost per Unit (₹) *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      required
-                      value={newItemData.costPerUnit}
-                      onChange={(e) => setNewItemData({ ...newItemData, costPerUnit: parseFloat(e.target.value) || 0.0 })}
-                      className={styles.formInput}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Supplier Code / Name</label>
-                    <input
-                      type="text"
-                      value={newItemData.supplier}
-                      onChange={(e) => setNewItemData({ ...newItemData, supplier: e.target.value })}
-                      placeholder="Mouser Electronics"
-                      className={styles.formInput}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Min Reorder Threshold *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
-                      value={newItemData.threshold}
-                      onChange={(e) => setNewItemData({ ...newItemData, threshold: parseInt(e.target.value) || 0 })}
-                      className={styles.formInput}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Max Storage Ceiling (Optional)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newItemData.maxStock}
-                      onChange={(e) => setNewItemData({ ...newItemData, maxStock: e.target.value })}
-                      placeholder="None"
-                      className={styles.formInput}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Operator Initials / Performed By *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newItemData.performedBy}
-                    onChange={(e) => setNewItemData({ ...newItemData, performedBy: e.target.value })}
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Specifications / Description Notes</label>
-                  <textarea
-                    value={newItemData.notes}
-                    onChange={(e) => setNewItemData({ ...newItemData, notes: e.target.value })}
-                    placeholder="Enter dimensional or pin spacing requirements..."
-                    className={styles.formInput}
-                    style={{ height: '60px', padding: '6px', resize: 'none' }}
-                  />
-                </div>
+          {/* Pagination Controls */}
+          {store.totalItemsCount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px var(--spacing-md)', borderTop: '1px solid var(--color-border-grid)', backgroundColor: '#faf9f8' }}>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                Showing {(store.itemsPage - 1) * store.itemsLimit + 1} to {Math.min(store.itemsPage * store.itemsLimit, store.totalItemsCount)} of {store.totalItemsCount} items
               </div>
-              <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setShowAddModal(false)} className={styles.actionButton}>
-                  Cancel
-                </button>
-                <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
-                  Confirm Create
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ------------------------------------------------ */}
-      {/* 2. Modal: Inspect Component Detail & History */}
-      {/* ------------------------------------------------ */}
-      {showDetailModal && selectedItem && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent} style={{ width: '600px' }}>
-            <div className={styles.modalHeader}>
-              <h3>Inspect: {selectedItem.sku}</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {!editMode && (
-                  <button
-                    onClick={() => {
-                      setEditItemData({ ...selectedItem, performedBy: 'Accounts' })
-                      setEditMode(true)
-                    }}
-                    className={styles.actionButton}
-                    style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Edit3 size={14} /> Edit Item
-                  </button>
-                )}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
-                  onClick={() => handleDeleteItem(selectedItem.id)}
+                  onClick={() => store.setItemsPage(Math.max(1, store.itemsPage - 1))}
+                  disabled={store.itemsPage === 1}
                   className={styles.actionButton}
-                  style={{ color: 'var(--color-error-text)', borderColor: 'var(--color-error-text)', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ opacity: store.itemsPage === 1 ? 0.5 : 1 }}
                 >
-                  <Trash2 size={14} /> Discontinue
+                  Previous
                 </button>
-                <button onClick={() => setShowDetailModal(false)} className={styles.actionButton} style={{ padding: '0 8px' }}>
-                  <X size={16} />
+                <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold' }}>
+                  Page {store.itemsPage} of {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => store.setItemsPage(Math.min(totalPages, store.itemsPage + 1))}
+                  disabled={store.itemsPage === totalPages || totalPages === 0}
+                  className={styles.actionButton}
+                  style={{ opacity: store.itemsPage === totalPages || totalPages === 0 ? 0.5 : 1 }}
+                >
+                  Next
                 </button>
               </div>
             </div>
+          )}
+        </div>
 
-            {editMode ? (
-              // Edit Form Mode
-              <form onSubmit={handleEditItem}>
+        {/* ------------------------------------------------ */}
+        {/* 1. Modal: Add Component Form */}
+        {/* ------------------------------------------------ */}
+        {showAddModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h3>Create New Component SKU</h3>
+                <button onClick={() => setShowAddModal(false)} className={styles.adjustBtn}>
+                  <X size={14} />
+                </button>
+              </div>
+              <form onSubmit={handleAddItem}>
                 <div className={styles.modalBody}>
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label>SKU / Part Code</label>
+                      <label>SKU / Part Code *</label>
                       <input
                         type="text"
                         required
-                        value={editItemData.sku}
-                        onChange={(e) => setEditItemData({ ...editItemData, sku: e.target.value })}
+                        value={newItemData.sku}
+                        onChange={(e) => setNewItemData({ ...newItemData, sku: e.target.value })}
+                        placeholder="e.g. REL-24V-01"
                         className={styles.formInput}
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Component Name</label>
+                      <label>Component Name *</label>
                       <input
                         type="text"
                         required
-                        value={editItemData.name}
-                        onChange={(e) => setEditItemData({ ...editItemData, name: e.target.value })}
+                        value={newItemData.name}
+                        onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })}
+                        placeholder="e.g. Schneider Relays 24V"
                         className={styles.formInput}
                       />
                     </div>
@@ -857,11 +672,11 @@ export default function Inventory() {
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label>Category</label>
+                      <label>Category *</label>
                       <select
                         required
-                        value={editItemData.categoryId || ''}
-                        onChange={(e) => setEditItemData({ ...editItemData, categoryId: e.target.value })}
+                        value={newItemData.categoryId}
+                        onChange={(e) => setNewItemData({ ...newItemData, categoryId: e.target.value })}
                         className={styles.formInput}
                       >
                         <option value="">-- Select Category --</option>
@@ -871,11 +686,12 @@ export default function Inventory() {
                       </select>
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Location</label>
+                      <label>Storage Location</label>
                       <input
                         type="text"
-                        value={editItemData.location || ''}
-                        onChange={(e) => setEditItemData({ ...editItemData, location: e.target.value })}
+                        value={newItemData.location}
+                        onChange={(e) => setNewItemData({ ...newItemData, location: e.target.value })}
+                        placeholder="Shelf A-1 / Row 2"
                         className={styles.formInput}
                       />
                     </div>
@@ -883,14 +699,37 @@ export default function Inventory() {
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label>Cost per Unit (₹)</label>
+                      <label>Initial Stock Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newItemData.quantity}
+                        onChange={(e) => setNewItemData({ ...newItemData, quantity: parseInt(e.target.value) || 0 })}
+                        className={styles.formInput}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Measurement Unit (pcs/meters)</label>
+                      <input
+                        type="text"
+                        value={newItemData.unit}
+                        onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
+                        placeholder="pcs"
+                        className={styles.formInput}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label>Cost per Unit (₹) *</label>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         required
-                        value={editItemData.costPerUnit}
-                        onChange={(e) => setEditItemData({ ...editItemData, costPerUnit: parseFloat(e.target.value) || 0.0 })}
+                        value={newItemData.costPerUnit}
+                        onChange={(e) => setNewItemData({ ...newItemData, costPerUnit: parseFloat(e.target.value) || 0.0 })}
                         className={styles.formInput}
                       />
                     </div>
@@ -898,8 +737,9 @@ export default function Inventory() {
                       <label>Supplier Code / Name</label>
                       <input
                         type="text"
-                        value={editItemData.supplier || ''}
-                        onChange={(e) => setEditItemData({ ...editItemData, supplier: e.target.value })}
+                        value={newItemData.supplier}
+                        onChange={(e) => setNewItemData({ ...newItemData, supplier: e.target.value })}
+                        placeholder="Mouser Electronics"
                         className={styles.formInput}
                       />
                     </div>
@@ -907,13 +747,13 @@ export default function Inventory() {
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label>Min Reorder Threshold</label>
+                      <label>Min Reorder Threshold *</label>
                       <input
                         type="number"
                         min="0"
                         required
-                        value={editItemData.threshold}
-                        onChange={(e) => setEditItemData({ ...editItemData, threshold: parseInt(e.target.value) || 0 })}
+                        value={newItemData.threshold}
+                        onChange={(e) => setNewItemData({ ...newItemData, threshold: parseInt(e.target.value) || 0 })}
                         className={styles.formInput}
                       />
                     </div>
@@ -922,21 +762,12 @@ export default function Inventory() {
                       <input
                         type="number"
                         min="0"
-                        value={editItemData.maxStock || ''}
-                        onChange={(e) => setEditItemData({ ...editItemData, maxStock: e.target.value })}
+                        value={newItemData.maxStock}
+                        onChange={(e) => setNewItemData({ ...newItemData, maxStock: e.target.value })}
+                        placeholder="None"
                         className={styles.formInput}
                       />
                     </div>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>Measurement Unit (pcs/meters)</label>
-                    <input
-                      type="text"
-                      value={editItemData.unit}
-                      onChange={(e) => setEditItemData({ ...editItemData, unit: e.target.value })}
-                      className={styles.formInput}
-                    />
                   </div>
 
                   <div className={styles.formGroup}>
@@ -944,183 +775,363 @@ export default function Inventory() {
                     <input
                       type="text"
                       required
-                      value={editItemData.performedBy || ''}
-                      onChange={(e) => setEditItemData({ ...editItemData, performedBy: e.target.value })}
+                      value={newItemData.performedBy}
+                      onChange={(e) => setNewItemData({ ...newItemData, performedBy: e.target.value })}
                       className={styles.formInput}
                     />
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label>Notes</label>
+                    <label>Specifications / Description Notes</label>
                     <textarea
-                      value={editItemData.notes || ''}
-                      onChange={(e) => setEditItemData({ ...editItemData, notes: e.target.value })}
+                      value={newItemData.notes}
+                      onChange={(e) => setNewItemData({ ...newItemData, notes: e.target.value })}
+                      placeholder="Enter dimensional or pin spacing requirements..."
                       className={styles.formInput}
                       style={{ height: '60px', padding: '6px', resize: 'none' }}
                     />
                   </div>
                 </div>
                 <div className={styles.modalFooter}>
-                  <button type="button" onClick={() => setEditMode(false)} className={styles.actionButton}>
-                    Back
+                  <button type="button" onClick={() => setShowAddModal(false)} className={styles.actionButton}>
+                    Cancel
                   </button>
                   <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
-                    Save Changes
+                    Confirm Create
                   </button>
                 </div>
               </form>
-            ) : (
-              // Detail View and Adjustment Form Mode
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div className={styles.modalBody}>
-                  {/* Item Specs Table */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--color-border-grid)', paddingBottom: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-sm)' }}>
-                      <div><strong>SKU:</strong> {selectedItem.sku}</div>
-                      <div><strong>Description:</strong> {selectedItem.name}</div>
-                      <div><strong>Category:</strong> {selectedItem.categoryName || 'Uncategorized'}</div>
-                      <div><strong>Location:</strong> {selectedItem.location || 'Not set'}</div>
-                      <div><strong>Supplier:</strong> {selectedItem.supplier || 'Not set'}</div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-sm)' }}>
-                      <div><strong>In Stock:</strong> {selectedItem.quantity} {selectedItem.unit}</div>
-                      <div><strong>Base Pricing:</strong> {formatCurrency(selectedItem.costPerUnit)}</div>
-                      <div><strong>Reorder Threshold:</strong> {selectedItem.threshold} {selectedItem.unit}</div>
-                      <div><strong>Max Stock:</strong> {selectedItem.maxStock || 'None'}</div>
-                      <div><strong>Last Moved At:</strong> {formatSqlDate(selectedItem.lastMovedAt)}</div>
-                    </div>
-                  </div>
+            </div>
+          </div>
+        )}
 
-                  {/* Stock Adjustment Action Panel */}
-                  <form onSubmit={handleDetailedAdjust} style={{ borderBottom: '1px solid var(--color-border-grid)', paddingBottom: '16px' }}>
-                    <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold', marginBottom: '8px' }}>Log Inventory Movement / Adjustment</h4>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '10px', marginBottom: '10px' }}>
-                      <div className={styles.formGroup}>
-                        <label>Movement Type</label>
-                        <select
-                          value={adjustType}
-                          onChange={(e) => setAdjustType(e.target.value as any)}
-                          className={styles.formInput}
-                        >
-                          <option value="IN">IN (Stock addition)</option>
-                          <option value="OUT">OUT (Consumption)</option>
-                          <option value="ADJUSTMENT">ADJUSTMENT (Auditing)</option>
-                        </select>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>Quantity</label>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          value={adjustQty}
-                          onChange={(e) => setAdjustQty(parseInt(e.target.value) || 1)}
-                          className={styles.formInput}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>Operator</label>
-                        <input
-                          type="text"
-                          required
-                          value={adjustOperator}
-                          onChange={(e) => setAdjustOperator(e.target.value)}
-                          className={styles.formInput}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>Reference (e.g. PO/Job)</label>
-                        <input
-                          type="text"
-                          value={adjustRef}
-                          placeholder="PO-200"
-                          onChange={(e) => setAdjustRef(e.target.value)}
-                          className={styles.formInput}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <div className={styles.formGroup} style={{ flex: 1 }}>
-                        <input
-                          type="text"
-                          placeholder="Movement rationale / notes..."
-                          value={adjustNotes}
-                          onChange={(e) => setAdjustNotes(e.target.value)}
-                          className={styles.formInput}
-                        />
-                      </div>
-                      <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
-                        Post Ledger Move
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Audit Log for this Item */}
-                  <div>
-                    <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <History size={14} /> Item Transaction History
-                    </h4>
-                    <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-border-grid)' }}>
-                      <table className={styles.gridTable}>
-                        <thead>
-                          <tr>
-                            <th>Date</th>
-                            <th>Action</th>
-                            <th style={{ textAlign: 'right' }}>Before</th>
-                            <th style={{ textAlign: 'right' }}>Delta</th>
-                            <th>Operator</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {itemHistory.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '16px' }}>
-                                No transactions recorded for this item.
-                              </td>
-                            </tr>
-                          ) : (
-                            itemHistory.map((tx) => (
-                              <tr key={tx.id}>
-                                <td style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                                  {formatSqlDate(tx.createdAt)}
-                                </td>
-                                <td>
-                                  <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '1px 4px', borderRadius: '2px', backgroundColor: tx.type === 'IN' || tx.type === 'INITIAL' ? '#e2f0d9' : tx.type === 'OUT' ? '#fbe5d6' : '#fff2cc', color: tx.type === 'IN' || tx.type === 'INITIAL' ? '#385723' : tx.type === 'OUT' ? '#c65911' : '#7f6000' }}>
-                                    {tx.type}
-                                  </span>
-                                </td>
-                                <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{tx.quantityBefore}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: tx.type === 'IN' || tx.type === 'INITIAL' ? 'var(--color-ok-text)' : tx.type === 'OUT' ? 'var(--color-error-text)' : 'inherit' }}>
-                                  {tx.type === 'OUT' ? '-' : '+'}{tx.quantity}
-                                </td>
-                                <td>{tx.performedBy}</td>
-                                <td style={{ color: 'var(--color-text-secondary)', fontSize: '11px' }}>
-                                  {tx.reference ? `[Ref: ${tx.reference}] ` : ''}{tx.notes || ''}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.modalFooter}>
-                  <button type="button" onClick={() => setShowDetailModal(false)} className={styles.actionButton}>
-                    Close View
+        {/* ------------------------------------------------ */}
+        {/* 2. Modal: Inspect Component Detail & History */}
+        {/* ------------------------------------------------ */}
+        {showDetailModal && selectedItem && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent} style={{ width: '600px' }}>
+              <div className={styles.modalHeader}>
+                <h3>Inspect: {selectedItem.sku}</h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {!editMode && (
+                    <button
+                      onClick={() => {
+                        setEditItemData({ ...selectedItem, performedBy: 'Accounts' })
+                        setEditMode(true)
+                      }}
+                      className={styles.actionButton}
+                      style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Edit3 size={14} /> Edit Item
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteItem(selectedItem.id)}
+                    className={styles.actionButton}
+                    style={{ color: 'var(--color-error-text)', borderColor: 'var(--color-error-text)', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Trash2 size={14} /> Discontinue
+                  </button>
+                  <button onClick={() => setShowDetailModal(false)} className={styles.actionButton} style={{ padding: '0 8px' }}>
+                    <X size={16} />
                   </button>
                 </div>
               </div>
-            )}
+
+              {editMode ? (
+                // Edit Form Mode
+                <form onSubmit={handleEditItem}>
+                  <div className={styles.modalBody}>
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>SKU / Part Code</label>
+                        <input
+                          type="text"
+                          required
+                          value={editItemData.sku}
+                          onChange={(e) => setEditItemData({ ...editItemData, sku: e.target.value })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Component Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={editItemData.name}
+                          onChange={(e) => setEditItemData({ ...editItemData, name: e.target.value })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>Category</label>
+                        <select
+                          required
+                          value={editItemData.categoryId || ''}
+                          onChange={(e) => setEditItemData({ ...editItemData, categoryId: e.target.value })}
+                          className={styles.formInput}
+                        >
+                          <option value="">-- Select Category --</option>
+                          {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Location</label>
+                        <input
+                          type="text"
+                          value={editItemData.location || ''}
+                          onChange={(e) => setEditItemData({ ...editItemData, location: e.target.value })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>Cost per Unit (₹)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          value={editItemData.costPerUnit}
+                          onChange={(e) => setEditItemData({ ...editItemData, costPerUnit: parseFloat(e.target.value) || 0.0 })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Supplier Code / Name</label>
+                        <input
+                          type="text"
+                          value={editItemData.supplier || ''}
+                          onChange={(e) => setEditItemData({ ...editItemData, supplier: e.target.value })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>Min Reorder Threshold</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={editItemData.threshold}
+                          onChange={(e) => setEditItemData({ ...editItemData, threshold: parseInt(e.target.value) || 0 })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Max Storage Ceiling (Optional)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editItemData.maxStock || ''}
+                          onChange={(e) => setEditItemData({ ...editItemData, maxStock: e.target.value })}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Measurement Unit (pcs/meters)</label>
+                      <input
+                        type="text"
+                        value={editItemData.unit}
+                        onChange={(e) => setEditItemData({ ...editItemData, unit: e.target.value })}
+                        className={styles.formInput}
+                      />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Operator Initials / Performed By *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editItemData.performedBy || ''}
+                        onChange={(e) => setEditItemData({ ...editItemData, performedBy: e.target.value })}
+                        className={styles.formInput}
+                      />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Notes</label>
+                      <textarea
+                        value={editItemData.notes || ''}
+                        onChange={(e) => setEditItemData({ ...editItemData, notes: e.target.value })}
+                        className={styles.formInput}
+                        style={{ height: '60px', padding: '6px', resize: 'none' }}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.modalFooter}>
+                    <button type="button" onClick={() => setEditMode(false)} className={styles.actionButton}>
+                      Back
+                    </button>
+                    <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                // Detail View and Adjustment Form Mode
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className={styles.modalBody}>
+                    {/* Item Specs Table */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--color-border-grid)', paddingBottom: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-sm)' }}>
+                        <div><strong>SKU:</strong> {selectedItem.sku}</div>
+                        <div><strong>Description:</strong> {selectedItem.name}</div>
+                        <div><strong>Category:</strong> {selectedItem.categoryName || 'Uncategorized'}</div>
+                        <div><strong>Location:</strong> {selectedItem.location || 'Not set'}</div>
+                        <div><strong>Supplier:</strong> {selectedItem.supplier || 'Not set'}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-sm)' }}>
+                        <div><strong>In Stock:</strong> {selectedItem.quantity} {selectedItem.unit}</div>
+                        <div><strong>Base Pricing:</strong> {formatCurrency(selectedItem.costPerUnit)}</div>
+                        <div><strong>Reorder Threshold:</strong> {selectedItem.threshold} {selectedItem.unit}</div>
+                        <div><strong>Max Stock:</strong> {selectedItem.maxStock || 'None'}</div>
+                        <div><strong>Last Moved At:</strong> {formatSqlDate(selectedItem.lastMovedAt)}</div>
+                      </div>
+                    </div>
+
+                    {/* Stock Adjustment Action Panel */}
+                    <form onSubmit={handleDetailedAdjust} style={{ borderBottom: '1px solid var(--color-border-grid)', paddingBottom: '16px' }}>
+                      <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold', marginBottom: '8px' }}>Log Inventory Movement / Adjustment</h4>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '10px', marginBottom: '10px' }}>
+                        <div className={styles.formGroup}>
+                          <label>Movement Type</label>
+                          <select
+                            value={adjustType}
+                            onChange={(e) => setAdjustType(e.target.value as any)}
+                            className={styles.formInput}
+                          >
+                            <option value="IN">IN (Stock addition)</option>
+                            <option value="OUT">OUT (Consumption)</option>
+                            <option value="ADJUSTMENT">ADJUSTMENT (Auditing)</option>
+                          </select>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            required
+                            value={adjustQty}
+                            onChange={(e) => setAdjustQty(parseInt(e.target.value) || 1)}
+                            className={styles.formInput}
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>Operator</label>
+                          <input
+                            type="text"
+                            required
+                            value={adjustOperator}
+                            onChange={(e) => setAdjustOperator(e.target.value)}
+                            className={styles.formInput}
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>Reference (e.g. PO/Job)</label>
+                          <input
+                            type="text"
+                            value={adjustRef}
+                            placeholder="PO-200"
+                            onChange={(e) => setAdjustRef(e.target.value)}
+                            className={styles.formInput}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div className={styles.formGroup} style={{ flex: 1 }}>
+                          <input
+                            type="text"
+                            placeholder="Movement rationale / notes..."
+                            value={adjustNotes}
+                            onChange={(e) => setAdjustNotes(e.target.value)}
+                            className={styles.formInput}
+                          />
+                        </div>
+                        <button type="submit" className={`${styles.actionButton} ${styles.primaryActionButton}`}>
+                          Post Ledger Move
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Audit Log for this Item */}
+                    <div>
+                      <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <History size={14} /> Item Transaction History
+                      </h4>
+                      <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-border-grid)' }}>
+                        <table className={styles.gridTable}>
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Action</th>
+                              <th style={{ textAlign: 'right' }}>Before</th>
+                              <th style={{ textAlign: 'right' }}>Delta</th>
+                              <th>Operator</th>
+                              <th>Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {itemHistory.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '16px' }}>
+                                  No transactions recorded for this item.
+                                </td>
+                              </tr>
+                            ) : (
+                              itemHistory.map((tx) => (
+                                <tr key={tx.id}>
+                                  <td style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                                    {formatSqlDate(tx.createdAt)}
+                                  </td>
+                                  <td>
+                                    <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '1px 4px', borderRadius: '2px', backgroundColor: tx.type === 'IN' || tx.type === 'INITIAL' ? '#e2f0d9' : tx.type === 'OUT' ? '#fbe5d6' : '#fff2cc', color: tx.type === 'IN' || tx.type === 'INITIAL' ? '#385723' : tx.type === 'OUT' ? '#c65911' : '#7f6000' }}>
+                                      {tx.type}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>{tx.quantityBefore}</td>
+                                  <td style={{ textAlign: 'right', fontWeight: 'bold', color: tx.type === 'IN' || tx.type === 'INITIAL' ? 'var(--color-ok-text)' : tx.type === 'OUT' ? 'var(--color-error-text)' : 'inherit' }}>
+                                    {tx.type === 'OUT' ? '-' : '+'}{tx.quantity}
+                                  </td>
+                                  <td>{tx.performedBy}</td>
+                                  <td style={{ color: 'var(--color-text-secondary)', fontSize: '11px' }}>
+                                    {tx.reference ? `[Ref: ${tx.reference}] ` : ''}{tx.notes || ''}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.modalFooter}>
+                    <button type="button" onClick={() => setShowDetailModal(false)} className={styles.actionButton}>
+                      Close View
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   )
