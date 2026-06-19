@@ -413,6 +413,19 @@ export default function Inventory() {
               placeholder="Search SKU or Name..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && localSearch.trim()) {
+                  const exactMatch = items.find(i => i.sku.toLowerCase() === localSearch.trim().toLowerCase());
+                  if (exactMatch) {
+                    openDetails(exactMatch);
+                  } else if (items.length === 1) {
+                    openDetails(items[0]);
+                  } else if (items.length === 0) {
+                    setNewItemData(prev => ({ ...prev, sku: localSearch.trim(), categoryId: store.selectedCategoryFilter || categories[0]?.id || '' }));
+                    setShowAddModal(true);
+                  }
+                }
+              }}
               className={styles.searchInput}
             />
 
