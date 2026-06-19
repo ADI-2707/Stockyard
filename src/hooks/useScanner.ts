@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export function useScanner(onScan: (scannedData: string) => void, timeoutMs: number = 30) {
+export function useScanner(onScan: (scannedData: string) => void, timeoutMs: number = 50) {
   const bufferRef = useRef<string>('');
   const lastKeyTimeRef = useRef<number>(Date.now());
 
@@ -20,7 +20,7 @@ export function useScanner(onScan: (scannedData: string) => void, timeoutMs: num
         // If the buffer has characters and was typed rapidly, it's a scan
         if (bufferRef.current.length >= 3) {
           onScan(bufferRef.current);
-          
+
           // Prevent the Enter key from triggering unintended form submissions or clicks
           e.preventDefault();
         }
@@ -36,7 +36,7 @@ export function useScanner(onScan: (scannedData: string) => void, timeoutMs: num
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    
+
     // Cleanup the event listener when component unmounts
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onScan, timeoutMs]);
