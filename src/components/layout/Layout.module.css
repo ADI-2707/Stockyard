@@ -182,3 +182,31 @@
   padding: var(--spacing-lg);
   background-color: #ffffff; /* Excel spreadsheet white grid area */
 }
+
+/* About footer — shown only on Settings & DB tab */
+.pageFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px var(--spacing-lg);
+  background-color: #f3f2f1;
+  border-top: 1px solid var(--color-border-light);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.pageFooterLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pageFooterDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--color-text-secondary);
+  opacity: 0.5;
+}
