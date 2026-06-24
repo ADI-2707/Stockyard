@@ -276,7 +276,7 @@ export async function getItemById(id: string) {
 }
 
 export async function createItem(data: any, performedBy: string) {
-  const itemId = data.id || generateId()
+  const itemId = generateId() // Always generate server-side; never trust renderer-supplied IDs
   const initialQty = data.quantity || 0
   const timestamp = new Date().toISOString()
 
