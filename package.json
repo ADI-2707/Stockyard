@@ -1,7 +1,7 @@
 {
   "name": "stockyard",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": "Aditya Singh",
   "description": "Desktop Application for Panel & Body Manufacturing Component Tracking",
   "main": "dist-electron/main.js",

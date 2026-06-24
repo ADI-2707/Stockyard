@@ -98,8 +98,19 @@ export default function Layout({ activeTab, setActiveTab, children }: LayoutProp
         <div className={styles.content}>
           {children}
         </div>
-      </div>
 
+        {/* About footer — only visible on Settings & DB tab */}
+        {activeTab === 'settings' && (
+          <div className={styles.pageFooter}>
+            <div className={styles.pageFooterLeft}>
+              <span><strong>Stockyard</strong> v{pkg.version}</span>
+              <div className={styles.pageFooterDot} />
+              <span>Panel &amp; Body Manufacturing Component Tracker</span>
+            </div>
+            <span>Developed by <strong>Aditya Singh</strong></span>
+          </div>
+        )}
+      </div>
 
     </div>
   )
