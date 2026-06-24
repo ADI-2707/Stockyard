@@ -22,7 +22,9 @@ try {
   dbPath = path.resolve(process.cwd(), 'inventory.db')
 }
 
-console.log('SQLite database path:', dbPath)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('SQLite database path:', dbPath)
+}
 
 const sqlite = new Database(dbPath)
 export const db = drizzle(sqlite, { schema })
