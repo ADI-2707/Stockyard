@@ -28,7 +28,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: true // Enforce OS-level renderer isolation (safe: preload uses no Node APIs directly)
     }
   })
 
