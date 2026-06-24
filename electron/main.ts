@@ -16,6 +16,12 @@ import { items, transactions, alerts, bomTemplates, bomItems } from './database/
 
 let mainWindow: BrowserWindow | null = null
 
+// Input sanitization: trim and cap operator names to 100 chars before storing in DB
+function sanitizeOperator(name?: string): string {
+  if (!name || typeof name !== 'string') return 'system'
+  return name.trim().slice(0, 100) || 'system'
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -113,19 +119,19 @@ ipcMain.handle('items:getById', async (_, id) => {
   return getItemById(id)
 })
 ipcMain.handle('items:create', async (_, { data, performedBy }) => {
-  const result = await createItem(data, performedBy)
+  const result = await createItem(data, sanitizeOperator(performedBy))
   // Run alert engine immediately to update status for new item
   await runAlertScan()
   return result
 })
 ipcMain.handle('items:update', async (_, { id, data, performedBy }) => {
-  const result = await updateItem(id, data, performedBy)
+  const result = await updateItem(id, data, sanitizeOperator(performedBy))
   // Run alert engine to reflect potential threshold or category threshold changes
   await runAlertScan()
   return result
 })
 ipcMain.handle('items:adjustStock', async (_, { itemId, quantityChange, type, performedBy, reference, notes }) => {
-  const result = await adjustStock(itemId, quantityChange, type, performedBy, reference, notes)
+  const result = await adjustStock(itemId, quantityChange, type, sanitizeOperator(performedBy), reference, notes)
   // Run alert engine immediately to resolve/generate alerts after stock adjustment
   await runAlertScan()
   return result
@@ -158,13 +164,13 @@ ipcMain.handle('alerts:getResolved', async () => {
   return getResolvedAlerts()
 })
 ipcMain.handle('alerts:acknowledge', async (_, { id, performedBy }) => {
-  const result = await acknowledgeAlert(id, performedBy)
+  const result = await acknowledgeAlert(id, sanitizeOperator(performedBy))
   // Push update event to renderer so UI stores reload alert counts
   if (mainWindow) mainWindow.webContents.send('alerts:updated')
   return result
 })
 ipcMain.handle('alerts:resolve', async (_, { id, performedBy }) => {
-  const result = await resolveAlert(id, performedBy)
+  const result = await resolveAlert(id, sanitizeOperator(performedBy))
   if (mainWindow) mainWindow.webContents.send('alerts:updated')
   return result
 })
