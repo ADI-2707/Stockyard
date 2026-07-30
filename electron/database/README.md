@@ -1,48 +1,50 @@
 # electron/database/
 
-This folder owns all direct interaction with the local SQLite database. Nothing outside this folder (and `electron/services/`) should touch SQLite directly — the rest of the main process, and all of `src/`, goes through the query handlers defined here.
+Owns the SQLite database: connection setup, schema, migrations, and every query used by the app. Nothing outside `database/` (and the alert engine in `services/`) should build a raw SQL query — everyone else calls into `queries/`.
 
 ## Structure
 
 ```
 database/
-├── connection.ts   # Opens the SQLite connection and runs Drizzle migrations on startup
-├── schema.ts       # Drizzle table schema definitions and indexes
-└── queries/        # Query handlers grouped by domain (items, transactions, alerts, BOM, categories, etc.)
+├── connection.ts   # Opens the better-sqlite3 connection, exports `db` (Drizzle client), runs migrations
+├── schema.ts       # Table definitions, indexes, and inferred TS types
+└── queries/        # Domain query handlers: categories, items, transactions, alerts, bom
 ```
 
 ## `connection.ts`
 
-- Initializes the `better-sqlite3` connection to `inventory.db` in the OS application-data directory (e.g. `C:\Users\<Username>\AppData\Roaming\stockyard\inventory.db` on Windows).
-- Runs any pending Drizzle migrations (generated into the top-level `drizzle/` folder) before the app finishes starting, so the schema is always up to date on launch.
-- Exports the initialized Drizzle client used by every file under `queries/`.
+- Resolves the database file path from Electron's `app.getPath('userData')` when running inside Electron, falling back to `process.cwd()/inventory.db` for CLI/migration/seed scripts run outside Electron.
+- Opens the file with `better-sqlite3` and wraps it with `drizzle()` as the exported `db` client used by every file in `queries/`.
+- `runMigrations()` runs Drizzle's `migrate()` against the `drizzle/` folder (resolved differently for packaged vs. dev builds) and is called once from `main.ts` on `app.whenReady()`.
+- After migrating, it also cleans up legacy rows where a timestamp column still literally contains the string `'CURRENT_TIMESTAMP'` (from an older schema default), replacing them with a real ISO timestamp across `items`, `transactions`, `alerts`, and `bom_templates`.
 
 ## `schema.ts`
 
-- Defines all tables (items, categories, transactions, alerts, BOM templates/components, etc.) using Drizzle's schema syntax.
-- Declares indexes on the columns most frequently used for filtering and sorting: `sku`, `name`, `categoryId`, `location`, `deletedAt`, `createdAt`. These keep search/filter/pagination queries fast as the dataset grows.
-- Is the single source of truth for the shape of the database — migrations in `drizzle/` are generated from changes made here.
+Defines six Drizzle tables and their inferred `Select`/`Insert` TypeScript types:
+
+| Table | Key columns | Indexes |
+|---|---|---|
+| `categories` | `id`, `name` (unique), `agingDays` (default 90), `color` | — |
+| `items` | `id`, `name`, `sku` (unique), `categoryId` → categories, `quantity`, `unit`, `threshold` (default 5), `maxStock`, `location`, `costPerUnit`, `supplier`, `lastMovedAt`, `addedAt`, `notes`, `deletedAt` (soft delete) | `name`, `categoryId`, `location`, `deletedAt` |
+| `transactions` | `id`, `itemId` → items, `type` (`IN`/`OUT`/`ADJUSTMENT`/`INITIAL`), `quantity`, `quantityBefore`, `performedBy`, `reference`, `notes`, `createdAt` | `itemId`, `createdAt` |
+| `alerts` | `id`, `itemId` → items, `type` (`LOW_STOCK`/`OUT_OF_STOCK`/`AGING`), `severity` (`INFO`/`WARNING`/`CRITICAL`), `message`, `isActive`, `acknowledgedAt`, `resolvedAt`, `triggeredAt` | — |
+| `bomTemplates` | `id`, `name` (unique), `description`, `createdAt` | — |
+| `bomItems` | composite PK (`bomId`, `itemId`) → bomTemplates/items, `quantity` | — |
+
+Indexes on `items` and `transactions` back the search/filter/sort queries used by `getFiltered` in `queries/items.ts` and `queries/transactions.ts`.
 
 ## `queries/`
 
-Each file groups the read/write logic for one domain and is called directly by the IPC handlers registered in `main.ts`:
-
-| File (by domain) | Responsibilities |
-|---|---|
-| `items` | `getAll`, `getFiltered` (server-side search/filter/pagination, 100 rows per page), `searchAutocomplete`, `getLocations`, `getSimpleList`, `getById`, `create`, `update`, `adjustStock`, `delete` |
-| `categories` | `getAll`, `create`, `update`, `delete` |
-| `transactions` | `getAll`, `getFiltered`, `getOperators`, `getByItem` — the stock movement ledger |
-| `alerts` | `getActive`, `getResolved`, `acknowledge`, `resolve` — backing store for the alert engine in `services/` |
-| `bom` | `getAll`, `getDetails`, `create`, `update`, `delete`, `checkCoverage` (compares BOM requirements against current stock) |
+See `database/queries/README.md` for the full breakdown of `alerts.ts`, `bom.ts`, `categories.ts`, `items.ts`, and `transactions.ts`.
 
 ## Design principles
 
-- **Filtering, sorting, and pagination happen in SQL**, not in JavaScript — handlers build queries using `LIMIT`/`OFFSET` and indexed `WHERE` clauses rather than fetching everything and slicing it in memory.
-- **Soft-delete aware**: reads generally exclude rows where `deletedAt` is set; deletes may be soft (flag) or hard depending on the endpoint.
-- **No IPC/Electron imports here**: this folder is pure data-access logic so it stays testable and reusable independent of `main.ts`.
+- **Filtering, sorting, and pagination happen in SQL**, not JavaScript — `getFiltered`-style functions use Drizzle `where`/`orderBy`/`limit`/`offset` against the indexed columns above.
+- **Soft-delete aware**: item reads exclude rows with `deletedAt` set; `items:delete` performs a soft delete (`softDeleteItem`), setting `deletedAt` rather than removing the row.
+- **No Electron/IPC imports** in `schema.ts` or `queries/` — only `connection.ts` reaches for `require('electron')`, and it does so defensively (try/catch) so the module also works from CLI scripts.
 
 ## Adding a new query
 
-1. Add the table/columns to `schema.ts` if needed, then generate a migration (`drizzle-kit`) into the top-level `drizzle/` folder.
-2. Add the query function to the relevant file in `queries/` (or create a new domain file).
-3. Call it from a new `ipcMain.handle(...)` in `main.ts`, and expose the channel via `preload.ts`.
+1. Add/alter tables in `schema.ts`, then generate a migration with `drizzle-kit` into the top-level `drizzle/` folder.
+2. Add the function to the relevant file in `queries/`.
+3. Wire it up: `ipcMain.handle(...)` in `electron/main.ts` → allowlist entry in `electron/preload.ts` → wrapper in `src/lib/ipc.ts`.
